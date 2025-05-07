@@ -21,7 +21,7 @@
                 />
                 <label for="side-switch"></label>
                 <span class="side-switch-label">서버</span>
-                <div class="pin-input-container" style="display: none">
+                <div id="pin-container" class="pin-input-container">
                   <input
                     type="password"
                     id="pin-input"
@@ -74,6 +74,19 @@
             <button class="time-btn" data-time="1">1분</button>
             <button class="time-btn" data-time="3">3분</button>
             <button class="time-btn" data-time="5">5분</button>
+            <select id="custom-minutes" class="custom-minutes-dropdown">
+              <option value="" disabled selected>분 선택</option>
+              <option value="6">6분</option>
+              <option value="7">7분</option>
+              <option value="8">8분</option>
+              <option value="9">9분</option>
+              <option value="10">10분</option>
+              <option value="11">11분</option>
+              <option value="12">12분</option>
+              <option value="13">13분</option>
+              <option value="14">14분</option>
+              <option value="15">15분</option>
+            </select>
             <button class="ctrl-btn" id="start-btn">▶</button>
             <button class="ctrl-btn" id="pause-btn">⏸</button>
             <button class="ctrl-btn" id="reset-btn">⟳</button>

@@ -1,38 +1,52 @@
 // 페이지 로드 시 실행
 document.addEventListener('DOMContentLoaded', () => {
-  // 초기 콘텐츠 로드
-  loadContent('home');
+  // 디버깅을 위한 DOM 요소 확인
+  console.log('DOM 로드됨');
+  console.log('서버 스위치 요소:', serverSwitch);
+  console.log('핀 입력 컨테이너 요소:', pinInputContainer);
+
+  // 서버 스위치 이벤트 리스너 설정
+  console.log('DOM 로드됨, 서버 스위치:', serverSwitch);
+
+  // 서버 스위치 이벤트 리스너 다시 설정
+  if (serverSwitch) {
+    console.log('[init] 서버 스위치 요소 찾음');
+    serverSwitch.addEventListener('change', function () {
+      console.log('[서버 스위치 이벤트] 상태 변경:', this.checked);
+
+      if (this.checked) {
+        // 1. 서버 스위치가 켜짐
+        console.log('[서버 스위치 이벤트] 서버 스위치 ON');
+        // 2. 핀 입력창 표시 함수 호출
+        togglePinContainer(true);
+        // 3. 클라이언트 스위치 끄고 비활성화
+        if (clientSwitch) {
+          clientSwitch.checked = false;
+          clientSwitch.disabled = true;
+          console.log('[서버 스위치 이벤트] 클라이언트 스위치 OFF 및 비활성화');
+        }
+      } else {
+        // 서버 스위치가 꺼짐
+        console.log('[서버 스위치 이벤트] 서버 스위치 OFF');
+        togglePinContainer(false);
+        if (clientSwitch) {
+          clientSwitch.disabled = false;
+          console.log('[서버 스위치 이벤트] 클라이언트 스위치 활성화');
+        }
+      }
+    });
+
+    // 수동으로 변경 이벤트 발생 - 페이지 로드 시 이미 체크되어 있는 경우 처리
+    console.log('초기 서버 스위치 상태:', serverSwitch.checked);
+    if (serverSwitch.checked) {
+      console.log('[init] 서버 스위치가 이미 켜져 있음, 핀 입력창 표시');
+      togglePinContainer(true);
+      if (clientSwitch) clientSwitch.disabled = true;
+    }
+  } else {
+    console.log('[init] 서버 스위치 요소를 찾을 수 없음');
+  }
 });
-
-// 페이지 콘텐츠 로드 함수
-function loadContent(page) {
-  const contentDiv = document.getElementById('content');
-
-  // 페이지별 콘텐츠 정의
-  const pages = {
-    home: `
-            <div class="welcome-section">
-                <h2>환영합니다!</h2>
-                <p>이 웹앱은 HTML, CSS, JavaScript로 만들어진 싱글 페이지 애플리케이션입니다.</p>
-                <button onclick="loadContent('about')">더 알아보기</button>
-            </div>
-        `,
-    about: `
-            <div class="about-section">
-                <h2>소개</h2>
-                <p>이 웹앱은 사용자 친화적인 인터페이스를 제공합니다.</p>
-                <button onclick="loadContent('home')">홈으로 돌아가기</button>
-            </div>
-        `
-  };
-
-  // 페이지 전환 애니메이션
-  contentDiv.style.opacity = '0';
-  setTimeout(() => {
-    contentDiv.innerHTML = pages[page] || pages.home;
-    contentDiv.style.opacity = '1';
-  }, 300);
-}
 
 let timer;
 let startTime;
@@ -47,7 +61,7 @@ let currentPin = null;
 // Supabase 설정 - 실제 프로젝트 값으로 교체 필요
 const SUPABASE_URL = 'https://hppcqgogwufilzjhcpuk.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwcGNxZ29nd3VmaWx6amhjcHVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2MTYzMTcsImV4cCI6MjA2MjE5MjMxN30.z2MCk-OVaUKn_kq_hsih6LDnG7fWJrt83fhg1OfFxHo';
-const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // DOM 요소
 const timerDisplay = document.getElementById('timer');
@@ -63,10 +77,10 @@ const fullscreenBtn = document.getElementById('fullscreen-btn');
 // 서버 모드 관련 DOM 요소
 const serverSwitch = document.getElementById('side-switch');
 const clientSwitch = document.getElementById('client-switch');
-const pinInputContainer = document.querySelector('.pin-input-container');
+const pinInputContainer = document.getElementById('pin-container');
 const pinInput = document.getElementById('pin-input');
 const pinSubmitBtn = document.getElementById('pin-submit-btn');
-const serverSwitchLabel = serverSwitch.closest('.side-switch-wrapper').querySelector('.side-switch-label');
+const serverSwitchLabel = document.querySelector('.side-switch-label');
 
 let examNumber = 0;
 
@@ -157,32 +171,6 @@ fullscreenBtn.addEventListener('click', () => {
 });
 document.addEventListener('fullscreenchange', updateFullscreenIcon);
 
-// 서버 스위치 변경 이벤트
-serverSwitch.addEventListener('change', function () {
-  if (this.checked) {
-    // 서버 스위치가 켜졌을 때
-    if (!isServerModeActive) {
-      pinInputContainer.style.display = 'flex'; // PIN 입력 UI 표시
-      pinInput.focus(); // 입력 필드에 포커스
-    }
-    // 클라이언트 스위치는 끄고 비활성화
-    clientSwitch.checked = false;
-    clientSwitch.disabled = true;
-  } else {
-    // 서버 스위치가 꺼졌을 때
-    pinInputContainer.style.display = 'none'; // PIN 입력 UI 숨기기
-    pinInput.value = ''; // PIN 입력 필드 초기화
-
-    if (isServerModeActive) {
-      // 서버 모드 비활성화
-      deactivateServerMode();
-    }
-
-    // 클라이언트 스위치 다시 활성화
-    clientSwitch.disabled = false;
-  }
-});
-
 // PIN 입력 필드 키 이벤트 (Enter 키 누르면 제출)
 pinInput.addEventListener('keypress', function (e) {
   if (e.key === 'Enter') {
@@ -217,7 +205,7 @@ async function submitPin() {
     // Supabase에 PIN 저장 (실제 DB 연동은 Supabase 설정 완료 후)
     if (SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
       // Supabase가 설정된 경우에만 실행
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('sessions')  // 테이블명은 실제 DB에 맞게 변경
         .insert([{
           pin: pin,
@@ -273,7 +261,7 @@ async function deactivateServerMode() {
     // Supabase에서 현재 PIN의 상태 업데이트 (실제 DB 연동은 Supabase 설정 완료 후)
     if (SUPABASE_URL !== 'YOUR_SUPABASE_URL' && currentPin) {
       // 데이터베이스 연동 시 비활성화 처리
-      // ...
+      // ... 예시: await supabaseClient.from('sessions').update({ status: 'inactive' }).eq('pin', currentPin);
       console.log('DB에서 PIN 비활성화:', currentPin);
     }
 
@@ -320,4 +308,30 @@ clientSwitch.addEventListener('change', function () {
 
 // 초기 상태
 updateExamNumber();
-updateDisplay(0); 
+updateDisplay(0);
+
+// 서버 스위치 변경 이벤트 - 수정된 부분
+function togglePinContainer(show) {
+  if (pinInputContainer) {
+    console.log('[togglePinContainer] 실행, show:', show);
+    pinInputContainer.style.display = show ? 'flex' : 'none';
+    if (show && pinInput) {
+      setTimeout(() => {
+        console.log('[togglePinContainer] 핀 입력창에 포커스 시도');
+        pinInput.focus();
+      }, 100);
+    }
+  } else {
+    console.log('[togglePinContainer] pinInputContainer가 null입니다');
+  }
+}
+
+const customMinutesDropdown = document.getElementById('custom-minutes');
+if (customMinutesDropdown) {
+  customMinutesDropdown.addEventListener('change', function () {
+    const minutes = parseInt(this.value);
+    if (!isNaN(minutes)) {
+      setTimer(minutes);
+    }
+  });
+} 

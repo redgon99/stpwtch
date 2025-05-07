@@ -238,7 +238,7 @@ body {
 }
 
 .pin-input-container {
-  display: flex;
+  display: none;
   flex-direction: column;
   align-items: center;
   gap: 8px;
@@ -283,4 +283,22 @@ body {
   color: #66ff66;
   margin-left: 5px;
   font-weight: bold;
+}
+
+.custom-minutes-dropdown {
+  background: #222831;
+  color: #39c0ed;
+  border: 1.5px solid #39c0ed;
+  border-radius: 4px;
+  font-size: 18px;
+  padding: 6px 16px;
+  margin: 0 2px;
+  cursor: pointer;
+  height: 38px;
+  outline: none;
+  transition: background 0.2s, color 0.2s;
+}
+.custom-minutes-dropdown:focus {
+  background: #39c0ed;
+  color: #222831;
 }
