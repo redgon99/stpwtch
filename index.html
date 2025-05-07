@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>스톱워치</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="left-panel">
+        <div class="timer-toolbar-wrapper">
+          <div class="timer-toolbar-row">
+            <div class="side-switches-row">
+              <div class="side-switch-wrapper">
+                <input
+                  type="checkbox"
+                  id="side-switch"
+                  class="side-switch"
+                  data-switch-type="server"
+                />
+                <label for="side-switch"></label>
+                <span class="side-switch-label">서버</span>
+                <div class="pin-input-container" style="display: none">
+                  <input
+                    type="password"
+                    id="pin-input"
+                    maxlength="4"
+                    placeholder="PIN 4자리"
+                  />
+                  <button id="pin-submit-btn">확인</button>
+                </div>
+              </div>
+              <div class="side-switch-wrapper">
+                <input
+                  type="checkbox"
+                  id="client-switch"
+                  class="side-switch"
+                  data-switch-type="client"
+                />
+                <label for="client-switch"></label>
+                <span class="side-switch-label">클라이언트</span>
+              </div>
+            </div>
+            <button class="fullscreen-btn" id="fullscreen-btn" title="전체화면">
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#39c0ed"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect
+                  x="3.5"
+                  y="3.5"
+                  width="17"
+                  height="17"
+                  rx="2.5"
+                  stroke="#39c0ed"
+                  stroke-width="2"
+                  fill="none"
+                />
+                <polyline points="7,4.5 4.5,4.5 4.5,7" />
+                <polyline points="17,4.5 19.5,4.5 19.5,7" />
+                <polyline points="7,19.5 4.5,19.5 4.5,17" />
+                <polyline points="17,19.5 19.5,19.5 19.5,17" />
+              </svg>
+            </button>
+          </div>
+          <div class="timer-controls">
+            <button class="time-btn" data-time="1">1분</button>
+            <button class="time-btn" data-time="3">3분</button>
+            <button class="time-btn" data-time="5">5분</button>
+            <button class="ctrl-btn" id="start-btn">▶</button>
+            <button class="ctrl-btn" id="pause-btn">⏸</button>
+            <button class="ctrl-btn" id="reset-btn">⟳</button>
+          </div>
+        </div>
+        <div class="timer-display">
+          <span id="timer">00:00.00</span>
+        </div>
+      </div>
+      <div class="right-panel">
+        <div class="exam-label">응시번호</div>
+        <div class="exam-controls">
+          <button class="exam-btn" id="minus-btn">-</button>
+          <button class="exam-btn" id="plus-btn">+</button>
+        </div>
+        <div class="exam-number" id="exam-number">00</div>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
