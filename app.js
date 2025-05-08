@@ -86,6 +86,15 @@ let examNumber = 0;
 
 function updateExamNumber() {
   examNumberDisplay.textContent = String(examNumber).padStart(2, '0');
+  if (isServerModeActive && currentPin) {
+    updateSession(
+      currentPin,
+      !isStopwatchMode ? (timerDuration * 60 * 1000 - elapsedTime) : 0,
+      isStopwatchMode ? elapsedTime : 0,
+      examNumber,
+      isStopwatchMode ? 'stopwatch' : 'timer'
+    );
+  }
 }
 
 plusBtn.addEventListener('click', () => {
@@ -97,11 +106,22 @@ minusBtn.addEventListener('click', () => {
   updateExamNumber();
 });
 
-function updateDisplay(timeLeft) {
-  const minutes = Math.floor(timeLeft / 60000);
-  const seconds = Math.floor((timeLeft % 60000) / 1000);
-  const milliseconds = Math.floor((timeLeft % 1000) / 10);
+function updateDisplay(timeValue) {
+  const minutes = Math.floor(timeValue / 60000);
+  const seconds = Math.floor((timeValue % 60000) / 1000);
+  const milliseconds = Math.floor((timeValue % 1000) / 10);
   timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(2, '0')}`;
+
+  // 서버모드일 때 DB에 저장
+  if (isServerModeActive && currentPin) {
+    updateSession(
+      currentPin,
+      !isStopwatchMode ? timeValue : 0,
+      isStopwatchMode ? timeValue : 0,
+      examNumber,
+      isStopwatchMode ? 'stopwatch' : 'timer'
+    );
+  }
 }
 
 function setTimer(minutes) {
@@ -112,7 +132,9 @@ function setTimer(minutes) {
 
 timeButtons.forEach(button => {
   button.addEventListener('click', () => {
-    setTimer(parseInt(button.dataset.time));
+    const minutes = parseInt(button.dataset.time);
+    setTimer(minutes);
+    startTimer(); // 버튼 클릭 시 즉시 타이머 시작
   });
 });
 
@@ -150,9 +172,49 @@ function resetTimer() {
   updateDisplay(timerDuration * 60 * 1000);
 }
 
-startBtn.addEventListener('click', startTimer);
-pauseBtn.addEventListener('click', pauseTimer);
-resetBtn.addEventListener('click', resetTimer);
+let isStopwatchMode = false;
+
+function startTimerOrStopwatch() {
+  if (timerDuration > 0) {
+    // 타이머 모드
+    isStopwatchMode = false;
+    startTimer();
+  } else {
+    // 스탑워치 모드
+    isStopwatchMode = true;
+    startStopwatch();
+  }
+}
+
+function startStopwatch() {
+  if (isRunning) return;
+  isRunning = true;
+  startTime = Date.now() - elapsedTime;
+  timer = setInterval(() => {
+    elapsedTime = Date.now() - startTime;
+    updateDisplay(elapsedTime);
+  }, 10);
+}
+
+function pauseAll() {
+  clearInterval(timer);
+  isRunning = false;
+}
+
+function resetAll() {
+  clearInterval(timer);
+  isRunning = false;
+  elapsedTime = 0;
+  timerDuration = 0;
+  updateDisplay(0);
+}
+
+startBtn.removeEventListener('click', startTimer); // 기존 이벤트 제거
+startBtn.addEventListener('click', startTimerOrStopwatch);
+pauseBtn.removeEventListener('click', pauseTimer); // 기존 이벤트 제거
+pauseBtn.addEventListener('click', pauseAll);
+resetBtn.removeEventListener('click', resetTimer); // 기존 이벤트 제거
+resetBtn.addEventListener('click', resetAll);
 
 function updateFullscreenIcon() {
   if (document.fullscreenElement) {
@@ -293,16 +355,29 @@ function updateServerLabel(isActive) {
   }
 }
 
-// 클라이언트 스위치 이벤트
+// 클라이언트 스위치 change 이벤트 리스너 통합
 clientSwitch.addEventListener('change', function () {
   if (this.checked) {
-    // 클라이언트 스위치가 켜지면 서버 스위치는 비활성화
+    // 클라이언트 핀 입력창 표시
+    clientPinInputContainer.style.display = 'flex';
+    clientPinInput.value = '';
+    clientPinInput.focus();
+    // 서버 스위치 비활성화
     serverSwitch.checked = false;
-    serverSwitch.dispatchEvent(new Event('change')); // 서버 스위치 이벤트 트리거
     serverSwitch.disabled = true;
   } else {
-    // 클라이언트 스위치가 꺼지면 서버 스위치 활성화
+    // 클라이언트 핀 입력창 숨김
+    clientPinInputContainer.style.display = 'none';
+    // 서버 스위치 활성화
     serverSwitch.disabled = false;
+    // 구독 해제
+    if (clientChannel) {
+      supabaseClient.removeChannel(clientChannel);
+      clientChannel = null;
+    }
+    // 클라이언트 PIN 표시도 제거
+    const existingIndicator = clientSwitchLabel.querySelector('.client-mode-active-indicator');
+    if (existingIndicator) existingIndicator.remove();
   }
 });
 
@@ -332,6 +407,112 @@ if (customMinutesDropdown) {
     const minutes = parseInt(this.value);
     if (!isNaN(minutes)) {
       setTimer(minutes);
+      startTimer(); // 드롭다운 선택 시 즉시 타이머 시작
     }
   });
+}
+
+// 서버모드: 값 변경 시 DB에 저장 함수
+async function updateSession(pin, timerValue, stopwatchValue, examNumber, mode) {
+  if (!pin) return;
+  const { data, error } = await supabaseClient
+    .from('sessions')
+    .update({
+      timer_value: timerValue,
+      stopwatch_value: stopwatchValue,
+      exam_number: examNumber,
+      mode: mode,
+      updated_at: new Date().toISOString()
+    })
+    .eq('pin', pin);
+  if (error) {
+    console.error('DB 업데이트 실패:', error);
+  }
+}
+
+// 클라이언트 모드 관련 DOM
+const clientPinInputContainer = document.getElementById('client-pin-container');
+const clientPinInput = document.getElementById('client-pin-input');
+const clientPinSubmitBtn = document.getElementById('client-pin-submit-btn');
+let clientChannel = null;
+
+// 클라이언트 스위치 라벨
+const clientSwitchLabel = document.querySelectorAll('.side-switch-label')[1];
+
+// 클라이언트 핀 확인 버튼
+clientPinSubmitBtn.addEventListener('click', function () {
+  subscribeToServerSession();
+  showClientPinLabel(clientPinInput.value);
+  // 핀 입력 후 입력창 숨김
+  clientPinInputContainer.style.display = 'none';
+});
+
+function showClientPinLabel(pin) {
+  // 이미 있는 인디케이터가 있으면 제거
+  const existingIndicator = clientSwitchLabel.querySelector('.client-mode-active-indicator');
+  if (existingIndicator) existingIndicator.remove();
+  if (pin && pin.length === 4) {
+    const indicator = document.createElement('span');
+    indicator.className = 'client-mode-active-indicator';
+    indicator.textContent = ` (PIN: ${pin})`;
+    clientSwitchLabel.appendChild(indicator);
+  }
+}
+
+function subscribeToServerSession() {
+  const pin = clientPinInput.value;
+  if (pin.length !== 4) {
+    alert('서버 PIN은 4자리 숫자로 입력해주세요.');
+    return;
+  }
+  // 기존 구독 해제
+  if (clientChannel) {
+    supabaseClient.removeChannel(clientChannel);
+    clientChannel = null;
+  }
+  // 최초 값 동기화
+  supabaseClient
+    .from('sessions')
+    .select('*')
+    .eq('pin', pin)
+    .single()
+    .then(({ data, error }) => {
+      if (error || !data) {
+        alert('해당 PIN의 서버 세션이 없습니다.');
+        return;
+      }
+      applySessionDataToClient(data);
+    });
+
+  // 실시간 구독
+  clientChannel = supabaseClient
+    .channel('session-sync-' + pin)
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `pin=eq.${pin}` },
+      (payload) => {
+        if (payload.new) {
+          applySessionDataToClient(payload.new);
+        }
+      }
+    )
+    .subscribe();
+}
+
+// 클라이언트 화면에 서버 세션 데이터 반영
+function applySessionDataToClient(data) {
+  // 타이머/스탑워치/응시번호 UI에 값 반영
+  if (data.mode === 'timer') {
+    timerDuration = Math.ceil(data.timer_value / 60000);
+    elapsedTime = 0;
+    updateDisplay(data.timer_value);
+    isStopwatchMode = false;
+  } else {
+    timerDuration = 0;
+    elapsedTime = data.stopwatch_value;
+    updateDisplay(data.stopwatch_value);
+    isStopwatchMode = true;
+  }
+  examNumber = data.exam_number;
+  updateExamNumber();
 } 

@@ -285,6 +285,13 @@ body {
   font-weight: bold;
 }
 
+.client-mode-active-indicator {
+  font-size: 12px;
+  color: #ffb300;
+  margin-left: 5px;
+  font-weight: bold;
+}
+
 .custom-minutes-dropdown {
   background: #222831;
   color: #39c0ed;
