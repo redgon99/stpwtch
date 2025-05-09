@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 서버 스위치 이벤트 리스너 다시 설정
   if (serverSwitch) {
     console.log('[init] 서버 스위치 요소 찾음');
-    serverSwitch.addEventListener('change', function () {
+    serverSwitch.addEventListener('change', async function () {
       console.log('[서버 스위치 이벤트] 상태 변경:', this.checked);
 
       if (this.checked) {
@@ -28,6 +28,9 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         // 서버 스위치가 꺼짐
         console.log('[서버 스위치 이벤트] 서버 스위치 OFF');
+        // 세션 비활성화
+        await deactivateServerMode();
+        // 핀 입력창 숨기기
         togglePinContainer(false);
         if (clientSwitch) {
           clientSwitch.disabled = false;
@@ -83,17 +86,31 @@ const pinSubmitBtn = document.getElementById('pin-submit-btn');
 const serverSwitchLabel = document.querySelector('.side-switch-label');
 
 let examNumber = 0;
+let lastExamNumber = 0;
+let lastMode = '';
+let updateTimeout;
+
+function debouncedUpdateSession(...args) {
+  clearTimeout(updateTimeout);
+  updateTimeout = setTimeout(() => {
+    updateSession(...args);
+  }, 1000); // 1초 동안 추가 업데이트가 없을 때만 실행
+}
 
 function updateExamNumber() {
   examNumberDisplay.textContent = String(examNumber).padStart(2, '0');
-  if (isServerModeActive && currentPin) {
-    updateSession(
+  // 상태가 변경되었을 때만 업데이트
+  if (isServerModeActive && currentPin &&
+    (lastExamNumber !== examNumber || lastMode !== (isStopwatchMode ? 'stopwatch' : 'timer'))) {
+    debouncedUpdateSession(
       currentPin,
       !isStopwatchMode ? (timerDuration * 60 * 1000 - elapsedTime) : 0,
       isStopwatchMode ? elapsedTime : 0,
       examNumber,
       isStopwatchMode ? 'stopwatch' : 'timer'
     );
+    lastExamNumber = examNumber;
+    lastMode = isStopwatchMode ? 'stopwatch' : 'timer';
   }
 }
 
@@ -112,15 +129,17 @@ function updateDisplay(timeValue) {
   const milliseconds = Math.floor((timeValue % 1000) / 10);
   timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(2, '0')}`;
 
-  // 서버모드일 때 DB에 저장
+  // 서버모드일 때 DB에 저장 - 1초마다만 업데이트
   if (isServerModeActive && currentPin) {
-    updateSession(
-      currentPin,
-      !isStopwatchMode ? timeValue : 0,
-      isStopwatchMode ? timeValue : 0,
-      examNumber,
-      isStopwatchMode ? 'stopwatch' : 'timer'
-    );
+    if (Math.floor(elapsedTime / 1000) !== Math.floor((elapsedTime - 10) / 1000)) {
+      debouncedUpdateSession(
+        currentPin,
+        !isStopwatchMode ? timeValue : 0,
+        isStopwatchMode ? timeValue : 0,
+        examNumber,
+        isStopwatchMode ? 'stopwatch' : 'timer'
+      );
+    }
   }
 }
 
@@ -317,24 +336,43 @@ function activateServerMode(pin) {
 
 // 서버 모드 비활성화 함수
 async function deactivateServerMode() {
-  if (!isServerModeActive) return;
+  if (!isServerModeActive || !currentPin) return;
 
   try {
-    // Supabase에서 현재 PIN의 상태 업데이트 (실제 DB 연동은 Supabase 설정 완료 후)
-    if (SUPABASE_URL !== 'YOUR_SUPABASE_URL' && currentPin) {
-      // 데이터베이스 연동 시 비활성화 처리
-      // ... 예시: await supabaseClient.from('sessions').update({ status: 'inactive' }).eq('pin', currentPin);
-      console.log('DB에서 PIN 비활성화:', currentPin);
+    // Supabase에서 현재 PIN의 상태를 'inactive'로 업데이트
+    const { error } = await supabaseClient
+      .from('sessions')
+      .update({
+        status: 'inactive',
+        updated_at: new Date().toISOString()
+      })
+      .eq('pin', currentPin);
+
+    if (error) {
+      console.error('세션 비활성화 실패:', error);
+      alert('세션 비활성화에 실패했습니다: ' + error.message);
+      return;
     }
 
-    isServerModeActive = false;
-    updateServerLabel(false);
-    console.log('서버 모드 비활성화됨');
+    console.log('세션 비활성화 성공:', currentPin);
 
+    // 로컬 상태 초기화
+    isServerModeActive = false;
     currentPin = null;
+    updateServerLabel(false);
+
+    // 타이머 상태 초기화
+    stopTimer();
+    elapsedTime = 0;
+    updateDisplay(0);
+
+    // 응시번호 초기화
+    examNumber = 0;
+    updateExamNumber();
 
   } catch (err) {
     console.error('서버 모드 비활성화 오류:', err);
+    alert('서버 모드 비활성화 중 오류가 발생했습니다: ' + err.message);
   }
 }
 
@@ -465,11 +503,13 @@ function subscribeToServerSession() {
     alert('서버 PIN은 4자리 숫자로 입력해주세요.');
     return;
   }
+
   // 기존 구독 해제
   if (clientChannel) {
     supabaseClient.removeChannel(clientChannel);
     clientChannel = null;
   }
+
   // 최초 값 동기화
   supabaseClient
     .from('sessions')
@@ -484,12 +524,19 @@ function subscribeToServerSession() {
       applySessionDataToClient(data);
     });
 
-  // 실시간 구독
+  // 실시간 구독 - 필요한 필드만 선택
   clientChannel = supabaseClient
     .channel('session-sync-' + pin)
     .on(
       'postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `pin=eq.${pin}` },
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'sessions',
+        filter: `pin=eq.${pin}`,
+        // 필요한 필드만 선택
+        columns: ['timer_value', 'stopwatch_value', 'exam_number', 'mode']
+      },
       (payload) => {
         if (payload.new) {
           applySessionDataToClient(payload.new);
