@@ -11,44 +11,17 @@
       <div class="left-panel">
         <div class="timer-toolbar-wrapper">
           <div class="timer-toolbar-row">
-            <div class="side-switches-row">
-              <div class="side-switch-wrapper">
-                <input
-                  type="checkbox"
-                  id="side-switch"
-                  class="side-switch"
-                  data-switch-type="server"
-                />
-                <label for="side-switch"></label>
-                <span class="side-switch-label">서버</span>
-                <div id="pin-container" class="pin-input-container">
-                  <input
-                    type="password"
-                    id="pin-input"
-                    maxlength="4"
-                    placeholder="PIN 4자리"
-                  />
-                  <button id="pin-submit-btn">확인</button>
-                </div>
-              </div>
-              <div class="side-switch-wrapper">
-                <input
-                  type="checkbox"
-                  id="client-switch"
-                  class="side-switch"
-                  data-switch-type="client"
-                />
-                <label for="client-switch"></label>
-                <span class="side-switch-label">클라이언트</span>
-                <div id="client-pin-container" class="pin-input-container">
-                  <input
-                    type="password"
-                    id="client-pin-input"
-                    maxlength="4"
-                    placeholder="서버 PIN 4자리"
-                  />
-                  <button id="client-pin-submit-btn">확인</button>
-                </div>
+            <div class="mode-selection-container">
+              <h3 id="mode-title">모드 선택</h3>
+              <div class="mode-controls">
+                <select id="mode-select" class="mode-dropdown">
+                  <option value="" selected>모드 선택</option>
+                  <option value="server">서버</option>
+                  <option value="client">클라이언트</option>
+                </select>
+                <select id="room-select" class="room-dropdown" disabled>
+                  <option value="">방 선택</option>
+                </select>
               </div>
             </div>
             <button class="fullscreen-btn" id="fullscreen-btn" title="전체화면">

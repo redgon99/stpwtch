@@ -2,52 +2,27 @@
 document.addEventListener('DOMContentLoaded', () => {
   // 디버깅을 위한 DOM 요소 확인
   console.log('DOM 로드됨');
-  console.log('서버 스위치 요소:', serverSwitch);
-  console.log('핀 입력 컨테이너 요소:', pinInputContainer);
 
-  // 서버 스위치 이벤트 리스너 설정
-  console.log('DOM 로드됨, 서버 스위치:', serverSwitch);
+  // 모드 드롭다운 초기화
+  initModeDropdown();
 
-  // 서버 스위치 이벤트 리스너 다시 설정
-  if (serverSwitch) {
-    console.log('[init] 서버 스위치 요소 찾음');
-    serverSwitch.addEventListener('change', async function () {
-      console.log('[서버 스위치 이벤트] 상태 변경:', this.checked);
+  // 초기 상태
+  updateExamNumber();
+  updateDisplay(0);
 
-      if (this.checked) {
-        // 1. 서버 스위치가 켜짐
-        console.log('[서버 스위치 이벤트] 서버 스위치 ON');
-        // 2. 핀 입력창 표시 함수 호출
-        togglePinContainer(true);
-        // 3. 클라이언트 스위치 끄고 비활성화
-        if (clientSwitch) {
-          clientSwitch.checked = false;
-          clientSwitch.disabled = true;
-          console.log('[서버 스위치 이벤트] 클라이언트 스위치 OFF 및 비활성화');
-        }
-      } else {
-        // 서버 스위치가 꺼짐
-        console.log('[서버 스위치 이벤트] 서버 스위치 OFF');
-        // 세션 비활성화
-        await deactivateServerMode();
-        // 핀 입력창 숨기기
-        togglePinContainer(false);
-        if (clientSwitch) {
-          clientSwitch.disabled = false;
-          console.log('[서버 스위치 이벤트] 클라이언트 스위치 활성화');
-        }
+  // 주기적으로 방 목록 갱신 (30초마다)
+  initRoomListRefresh();
+
+  // 커스텀 분 드롭다운 이벤트
+  const customMinutesDropdown = document.getElementById('custom-minutes');
+  if (customMinutesDropdown) {
+    customMinutesDropdown.addEventListener('change', function () {
+      const minutes = parseInt(this.value);
+      if (!isNaN(minutes)) {
+        setTimer(minutes);
+        startTimer(); // 드롭다운 선택 시 즉시 타이머 시작
       }
     });
-
-    // 수동으로 변경 이벤트 발생 - 페이지 로드 시 이미 체크되어 있는 경우 처리
-    console.log('초기 서버 스위치 상태:', serverSwitch.checked);
-    if (serverSwitch.checked) {
-      console.log('[init] 서버 스위치가 이미 켜져 있음, 핀 입력창 표시');
-      togglePinContainer(true);
-      if (clientSwitch) clientSwitch.disabled = true;
-    }
-  } else {
-    console.log('[init] 서버 스위치 요소를 찾을 수 없음');
   }
 });
 
@@ -64,7 +39,29 @@ let currentPin = null;
 // Supabase 설정 - 실제 프로젝트 값으로 교체 필요
 const SUPABASE_URL = 'https://hppcqgogwufilzjhcpuk.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwcGNxZ29nd3VmaWx6amhjcHVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2MTYzMTcsImV4cCI6MjA2MjE5MjMxN30.z2MCk-OVaUKn_kq_hsih6LDnG7fWJrt83fhg1OfFxHo';
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+console.log('Supabase 연결 시도:', SUPABASE_URL);
+let supabaseClient;
+try {
+  supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  console.log('Supabase 클라이언트 생성 성공:', supabaseClient);
+
+  // Supabase 연결 테스트
+  setTimeout(async () => {
+    try {
+      const { data, error } = await supabaseClient.from('sessions').select('count').limit(1);
+      if (error) {
+        console.error('Supabase 연결 테스트 실패:', error);
+      } else {
+        console.log('Supabase 연결 테스트 성공:', data);
+      }
+    } catch (e) {
+      console.error('Supabase 연결 테스트 중 예외 발생:', e);
+    }
+  }, 1000);
+} catch (e) {
+  console.error('Supabase 클라이언트 생성 중 오류 발생:', e);
+  supabaseClient = null;
+}
 
 // DOM 요소
 const timerDisplay = document.getElementById('timer');
@@ -77,18 +74,16 @@ const plusBtn = document.getElementById('plus-btn');
 const minusBtn = document.getElementById('minus-btn');
 const fullscreenBtn = document.getElementById('fullscreen-btn');
 
-// 서버 모드 관련 DOM 요소
-const serverSwitch = document.getElementById('side-switch');
-const clientSwitch = document.getElementById('client-switch');
-const pinInputContainer = document.getElementById('pin-container');
-const pinInput = document.getElementById('pin-input');
-const pinSubmitBtn = document.getElementById('pin-submit-btn');
-const serverSwitchLabel = document.querySelector('.side-switch-label');
+// 서버/클라이언트 모드 관련 DOM 요소
+const modeTitle = document.getElementById('mode-title');
+const modeSelect = document.getElementById('mode-select');
+const roomSelect = document.getElementById('room-select');
 
 let examNumber = 0;
 let lastExamNumber = 0;
 let lastMode = '';
 let updateTimeout;
+let clientChannel = null;
 
 function debouncedUpdateSession(...args) {
   clearTimeout(updateTimeout);
@@ -195,13 +190,13 @@ let isStopwatchMode = false;
 
 function startTimerOrStopwatch() {
   if (timerDuration > 0) {
-    // 타이머 모드
     isStopwatchMode = false;
     startTimer();
+    if (isServerModeActive && currentPin) setSessionStatus(currentPin, 'running');
   } else {
-    // 스탑워치 모드
     isStopwatchMode = true;
     startStopwatch();
+    if (isServerModeActive && currentPin) setSessionStatus(currentPin, 'running');
   }
 }
 
@@ -218,6 +213,7 @@ function startStopwatch() {
 function pauseAll() {
   clearInterval(timer);
   isRunning = false;
+  if (isServerModeActive && currentPin) setSessionStatus(currentPin, 'paused');
 }
 
 function resetAll() {
@@ -226,16 +222,34 @@ function resetAll() {
   elapsedTime = 0;
   timerDuration = 0;
   updateDisplay(0);
+  if (isServerModeActive && currentPin) setSessionStatus(currentPin, 'paused');
 }
 
-startBtn.removeEventListener('click', startTimer); // 기존 이벤트 제거
-startBtn.addEventListener('click', startTimerOrStopwatch);
-pauseBtn.removeEventListener('click', pauseTimer); // 기존 이벤트 제거
-pauseBtn.addEventListener('click', pauseAll);
-resetBtn.removeEventListener('click', resetTimer); // 기존 이벤트 제거
-resetBtn.addEventListener('click', resetAll);
+// 버튼 이벤트 리스너 - DOM 요소가 존재하는 경우에만 실행
+if (startBtn) {
+  startBtn.removeEventListener('click', startTimer);
+  startBtn.addEventListener('click', startTimerOrStopwatch);
+} else {
+  console.log('startBtn이 존재하지 않습니다.');
+}
+
+if (pauseBtn) {
+  pauseBtn.removeEventListener('click', pauseTimer);
+  pauseBtn.addEventListener('click', pauseAll);
+} else {
+  console.log('pauseBtn이 존재하지 않습니다.');
+}
+
+if (resetBtn) {
+  resetBtn.removeEventListener('click', resetTimer);
+  resetBtn.addEventListener('click', resetAll);
+} else {
+  console.log('resetBtn이 존재하지 않습니다.');
+}
 
 function updateFullscreenIcon() {
+  if (!fullscreenBtn) return;
+
   if (document.fullscreenElement) {
     fullscreenBtn.classList.add('fullscreen-active');
   } else {
@@ -243,98 +257,235 @@ function updateFullscreenIcon() {
   }
 }
 
-fullscreenBtn.addEventListener('click', () => {
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen();
-  } else {
-    document.exitFullscreen();
-  }
-});
+if (fullscreenBtn) {
+  fullscreenBtn.addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  });
+}
+
+// 전체화면 변경 이벤트 리스너
 document.addEventListener('fullscreenchange', updateFullscreenIcon);
 
-// PIN 입력 필드 키 이벤트 (Enter 키 누르면 제출)
-pinInput.addEventListener('keypress', function (e) {
-  if (e.key === 'Enter') {
-    submitPin();
-  }
-});
+// 서울(Asia/Seoul) 시간 기준 yyyy-mm-dd hh:mm:ss 포맷 반환 함수
+function getSeoulISOString() {
+  const now = new Date();
+  // 서울 UTC+9
+  const offset = 9 * 60;
+  const local = new Date(now.getTime() + (offset - now.getTimezoneOffset()) * 60000);
+  // yyyy-mm-dd hh:mm:ss 포맷
+  const yyyy = local.getFullYear();
+  const mm = String(local.getMonth() + 1).padStart(2, '0');
+  const dd = String(local.getDate()).padStart(2, '0');
+  const hh = String(local.getHours()).padStart(2, '0');
+  const min = String(local.getMinutes()).padStart(2, '0');
+  const ss = String(local.getSeconds()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
+}
 
-// PIN 입력 필드 변화 이벤트 (숫자만 입력 가능)
-pinInput.addEventListener('input', function () {
-  // 숫자가 아닌 문자 제거
-  this.value = this.value.replace(/[^\d]/g, '');
+// 모드 드롭다운 초기화
+function initModeDropdown() {
+  console.log('모드 드롭다운 초기화 시작');
+  console.log('modeSelect 요소:', modeSelect);
+  console.log('roomSelect 요소:', roomSelect);
 
-  // 최대 4자리
-  if (this.value.length > 4) {
-    this.value = this.value.slice(0, 4);
-  }
-});
+  if (modeSelect) {
+    modeSelect.addEventListener('change', function () {
+      const selectedMode = this.value;
+      console.log('모드 선택 변경됨:', selectedMode);
 
-// PIN 제출 버튼 클릭 이벤트
-pinSubmitBtn.addEventListener('click', submitPin);
+      // 기존 방 선택 초기화
+      roomSelect.innerHTML = '<option value="">방 선택</option>';
 
-// PIN 제출 처리 함수
-async function submitPin() {
-  const pin = pinInput.value;
-
-  if (pin.length !== 4) {
-    alert('PIN은 4자리 숫자로 입력해주세요.');
-    return;
-  }
-
-  try {
-    // Supabase에 PIN 저장 (실제 DB 연동은 Supabase 설정 완료 후)
-    if (SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
-      // Supabase가 설정된 경우에만 실행
-      const { data, error } = await supabaseClient
-        .from('sessions')  // 테이블명은 실제 DB에 맞게 변경
-        .insert([{
-          pin: pin,
-          created_at: new Date().toISOString(),
-          status: 'active'
-        }])
-        .select();
-
-      if (error) {
-        console.error('PIN 저장 실패:', error);
-        alert('PIN 저장에 실패했습니다: ' + error.message);
-        return;
+      if (selectedMode === 'server') {
+        // 서버 모드 선택 시
+        console.log('서버 모드 선택됨, loadActiveRooms 호출');
+        loadActiveRooms();
+        modeTitle.textContent = '서버 모드';
+        roomSelect.disabled = false;
+      } else if (selectedMode === 'client') {
+        // 클라이언트 모드 선택 시
+        console.log('클라이언트 모드 선택됨, loadAllRooms 호출');
+        loadAllRooms();
+        modeTitle.textContent = '클라이언트 모드';
+        roomSelect.disabled = false;
+      } else {
+        console.log('모드 선택 취소됨');
+        modeTitle.textContent = '모드 선택';
+        roomSelect.disabled = true;
       }
 
-      console.log('PIN 저장 성공:', data);
-    } else {
-      // 개발 모드: Supabase 미설정 시 콘솔에만 로그
-      console.log('개발 모드: PIN이 저장되었다고 가정합니다 -', pin);
-    }
+      // 서버/클라이언트 모드 전환 시 기존 활성화된 모드 비활성화
+      if (isServerModeActive && selectedMode !== 'server') {
+        deactivateServerMode();
+      }
 
-    // 서버 모드 활성화
-    activateServerMode(pin);
+      if (clientChannel && selectedMode !== 'client') {
+        // 클라이언트 모드 비활성화
+        supabaseClient.removeChannel(clientChannel);
+        clientChannel = null;
+      }
+    });
+  } else {
+    console.error('modeSelect 요소를 찾을 수 없습니다!');
+  }
 
-  } catch (err) {
-    console.error('오류 발생:', err);
-    alert('오류가 발생했습니다: ' + err.message);
+  if (roomSelect) {
+    roomSelect.addEventListener('change', function () {
+      const selectedPin = this.value;
+      const selectedMode = modeSelect.value;
+      console.log('방 선택 변경됨:', selectedPin, '모드:', selectedMode);
+
+      if (!selectedPin) return;
+
+      if (selectedMode === 'server') {
+        // 서버 모드에서 방 선택 시
+        activateServerMode(selectedPin);
+      } else if (selectedMode === 'client') {
+        // 클라이언트 모드에서 방 선택 시
+        subscribeToServerSession(selectedPin);
+      }
+    });
+  } else {
+    console.error('roomSelect 요소를 찾을 수 없습니다!');
   }
 }
 
-// 서버 모드 활성화 함수
+// 활성화된 방 목록 로드 (서버 모드)
+async function loadActiveRooms() {
+  console.log('서버 모드 방 목록 로드 시작');
+  roomSelect.disabled = true;
+  roomSelect.innerHTML = '<option value="">로딩 중...</option>';
+
+  try {
+    // 방 선택 옵션만 추가
+    let options = '<option value="">방 선택</option>';
+
+    // 클라이언트와 동일하게 모든 방 목록 가져오기 (status 조건 제거)
+    console.log('Supabase 세션 데이터 요청 중...');
+    const { data, error } = await supabaseClient
+      .from('sessions')
+      .select('pin, status')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    // 최대 10개 방 표시
+    const rooms = data.slice(0, 10);
+
+    rooms.forEach((room, index) => {
+      const isActive = room.status === 'active';
+      const statusIndicator = isActive ? '🟢' : '⚫';
+      options += `<option value="${room.pin}">PIN: ${room.pin}</option>`;
+    });
+
+    rooms.forEach((room, index) => {
+      const isActive = room.status === 'active';
+      const statusIndicator = isActive ? '🟢' : '⚫';
+      options += `<option value="${room.pin}">PIN: ${room.pin} ${statusIndicator}</option>`;
+    });
+
+    rooms.forEach((room, index) => {
+      const isActive = room.status === 'active';
+      const statusIndicator = isActive ? '🟢' : '⚫';
+      options += `<option value="${room.pin}">PIN: ${room.pin} ${statusIndicator}</option>`;
+    });
+
+    console.log('방 목록 생성 완료:', options);
+    roomSelect.innerHTML = options;
+    roomSelect.disabled = false;
+
+  } catch (err) {
+    console.error('방 목록 로드 실패:', err);
+    roomSelect.innerHTML = '<option value="">방 목록 로드 실패</option>';
+    alert(`방 목록을 가져오는 중 오류가 발생했습니다: ${err.message || err}`);
+    setTimeout(() => {
+      roomSelect.innerHTML = '<option value="">방 선택</option>';
+      roomSelect.disabled = false;
+    }, 2000);
+  }
+}
+
+// 모든 방 목록 로드 (클라이언트 모드)
+async function loadAllRooms() {
+  roomSelect.disabled = true;
+  roomSelect.innerHTML = '<option value="">로딩 중...</option>';
+
+  try {
+    // 방 선택 옵션만 추가
+    let options = '<option value="">방 선택</option>';
+
+    // 클라이언트와 동일하게 모든 방 목록 가져오기 (status 조건 제거)
+    console.log('Supabase 세션 데이터 요청 중...');
+    const { data, error } = await supabaseClient
+      .from('sessions')
+      .select('pin, status')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    // 최대 10개 방 표시
+    const rooms = data.slice(0, 10);
+
+    rooms.forEach((room, index) => {
+      const isActive = room.status === 'active';
+      const statusIndicator = isActive ? '🟢' : '⚫';
+      options += `<option value="${room.pin}">PIN: ${room.pin} ${statusIndicator}</option>`;
+    });
+
+    roomSelect.innerHTML = options;
+    roomSelect.disabled = false;
+
+  } catch (err) {
+    console.error('방 목록 로드 실패:', err);
+    roomSelect.innerHTML = '<option value="">방 목록 로드 실패</option>';
+    setTimeout(() => {
+      roomSelect.innerHTML = '<option value="">방 선택</option>';
+      roomSelect.disabled = false;
+    }, 2000);
+  }
+}
+
+// 서버 모드 활성화 함수 (수정)
 function activateServerMode(pin) {
   isServerModeActive = true;
   currentPin = pin;
 
-  // PIN 입력 UI 숨기기
-  pinInputContainer.style.display = 'none';
+  // 방 상태를 active로 설정
+  supabaseClient
+    .from('sessions')
+    .update({
+      status: 'active',
+      updated_at: getSeoulISOString()
+    })
+    .eq('pin', pin)
+    .then(({ error }) => {
+      if (error) {
+        console.error('방 활성화 실패:', error);
+      } else {
+        console.log('방이 활성화되었습니다:', pin);
+
+        // 방 목록을 다시 로드하여 상태 표시 업데이트
+        if (modeSelect.value === 'server') {
+          loadActiveRooms();
+        }
+      }
+    });
 
   // 서버 모드 활성화 표시
-  updateServerLabel(true);
+  modeTitle.textContent = `서버 모드 (PIN: ${pin})`;
 
   // 사용자에게 알림
   alert(`서버 모드가 PIN [${pin}]으로 활성화되었습니다.`);
 
-  // 여기에 서버 모드 관련 추가 기능 구현
+  // 서버 모드 관련 추가 기능 구현
   console.log('서버 모드 활성화됨 - PIN:', pin);
 }
 
-// 서버 모드 비활성화 함수
+// 서버 모드 비활성화 함수 (수정)
 async function deactivateServerMode() {
   if (!isServerModeActive || !currentPin) return;
 
@@ -344,7 +495,7 @@ async function deactivateServerMode() {
       .from('sessions')
       .update({
         status: 'inactive',
-        updated_at: new Date().toISOString()
+        updated_at: getSeoulISOString()
       })
       .eq('pin', currentPin);
 
@@ -359,7 +510,7 @@ async function deactivateServerMode() {
     // 로컬 상태 초기화
     isServerModeActive = false;
     currentPin = null;
-    updateServerLabel(false);
+    modeTitle.textContent = '서버 모드';
 
     // 타이머 상태 초기화
     stopTimer();
@@ -370,137 +521,21 @@ async function deactivateServerMode() {
     examNumber = 0;
     updateExamNumber();
 
+    // 방 목록 다시 로드
+    if (modeSelect.value === 'server') {
+      loadActiveRooms();
+    }
+
   } catch (err) {
     console.error('서버 모드 비활성화 오류:', err);
     alert('서버 모드 비활성화 중 오류가 발생했습니다: ' + err.message);
   }
 }
 
-// 서버 라벨 업데이트 함수
-function updateServerLabel(isActive) {
-  // 이미 있는 인디케이터가 있으면 제거
-  const existingIndicator = serverSwitchLabel.querySelector('.server-mode-active-indicator');
-  if (existingIndicator) {
-    existingIndicator.remove();
-  }
-
-  if (isActive && currentPin) {
-    // 활성화 상태 표시 추가
-    const indicator = document.createElement('span');
-    indicator.className = 'server-mode-active-indicator';
-    indicator.textContent = ` (PIN: ${currentPin})`;
-    serverSwitchLabel.appendChild(indicator);
-  }
-}
-
-// 클라이언트 스위치 change 이벤트 리스너 통합
-clientSwitch.addEventListener('change', function () {
-  if (this.checked) {
-    // 클라이언트 핀 입력창 표시
-    clientPinInputContainer.style.display = 'flex';
-    clientPinInput.value = '';
-    clientPinInput.focus();
-    // 서버 스위치 비활성화
-    serverSwitch.checked = false;
-    serverSwitch.disabled = true;
-  } else {
-    // 클라이언트 핀 입력창 숨김
-    clientPinInputContainer.style.display = 'none';
-    // 서버 스위치 활성화
-    serverSwitch.disabled = false;
-    // 구독 해제
-    if (clientChannel) {
-      supabaseClient.removeChannel(clientChannel);
-      clientChannel = null;
-    }
-    // 클라이언트 PIN 표시도 제거
-    const existingIndicator = clientSwitchLabel.querySelector('.client-mode-active-indicator');
-    if (existingIndicator) existingIndicator.remove();
-  }
-});
-
-// 초기 상태
-updateExamNumber();
-updateDisplay(0);
-
-// 서버 스위치 변경 이벤트 - 수정된 부분
-function togglePinContainer(show) {
-  if (pinInputContainer) {
-    console.log('[togglePinContainer] 실행, show:', show);
-    pinInputContainer.style.display = show ? 'flex' : 'none';
-    if (show && pinInput) {
-      setTimeout(() => {
-        console.log('[togglePinContainer] 핀 입력창에 포커스 시도');
-        pinInput.focus();
-      }, 100);
-    }
-  } else {
-    console.log('[togglePinContainer] pinInputContainer가 null입니다');
-  }
-}
-
-const customMinutesDropdown = document.getElementById('custom-minutes');
-if (customMinutesDropdown) {
-  customMinutesDropdown.addEventListener('change', function () {
-    const minutes = parseInt(this.value);
-    if (!isNaN(minutes)) {
-      setTimer(minutes);
-      startTimer(); // 드롭다운 선택 시 즉시 타이머 시작
-    }
-  });
-}
-
-// 서버모드: 값 변경 시 DB에 저장 함수
-async function updateSession(pin, timerValue, stopwatchValue, examNumber, mode) {
-  if (!pin) return;
-  const { data, error } = await supabaseClient
-    .from('sessions')
-    .update({
-      timer_value: timerValue,
-      stopwatch_value: stopwatchValue,
-      exam_number: examNumber,
-      mode: mode,
-      updated_at: new Date().toISOString()
-    })
-    .eq('pin', pin);
-  if (error) {
-    console.error('DB 업데이트 실패:', error);
-  }
-}
-
-// 클라이언트 모드 관련 DOM
-const clientPinInputContainer = document.getElementById('client-pin-container');
-const clientPinInput = document.getElementById('client-pin-input');
-const clientPinSubmitBtn = document.getElementById('client-pin-submit-btn');
-let clientChannel = null;
-
-// 클라이언트 스위치 라벨
-const clientSwitchLabel = document.querySelectorAll('.side-switch-label')[1];
-
-// 클라이언트 핀 확인 버튼
-clientPinSubmitBtn.addEventListener('click', function () {
-  subscribeToServerSession();
-  showClientPinLabel(clientPinInput.value);
-  // 핀 입력 후 입력창 숨김
-  clientPinInputContainer.style.display = 'none';
-});
-
-function showClientPinLabel(pin) {
-  // 이미 있는 인디케이터가 있으면 제거
-  const existingIndicator = clientSwitchLabel.querySelector('.client-mode-active-indicator');
-  if (existingIndicator) existingIndicator.remove();
-  if (pin && pin.length === 4) {
-    const indicator = document.createElement('span');
-    indicator.className = 'client-mode-active-indicator';
-    indicator.textContent = ` (PIN: ${pin})`;
-    clientSwitchLabel.appendChild(indicator);
-  }
-}
-
-function subscribeToServerSession() {
-  const pin = clientPinInput.value;
-  if (pin.length !== 4) {
-    alert('서버 PIN은 4자리 숫자로 입력해주세요.');
+// 클라이언트 모드 연결 함수 (수정)
+function subscribeToServerSession(pin) {
+  if (!pin || pin.length !== 4) {
+    alert('올바른 서버 PIN을 선택해주세요.');
     return;
   }
 
@@ -521,6 +556,10 @@ function subscribeToServerSession() {
         alert('해당 PIN의 서버 세션이 없습니다.');
         return;
       }
+
+      // 클라이언트 모드 표시 업데이트
+      modeTitle.textContent = `클라이언트 모드 (PIN: ${pin})`;
+
       applySessionDataToClient(data);
     });
 
@@ -535,10 +574,15 @@ function subscribeToServerSession() {
         table: 'sessions',
         filter: `pin=eq.${pin}`,
         // 필요한 필드만 선택
-        columns: ['timer_value', 'stopwatch_value', 'exam_number', 'mode']
+        columns: ['timer_value', 'stopwatch_value', 'exam_number', 'mode', 'ingox', 'started_at', 'status']
       },
       (payload) => {
         if (payload.new) {
+          // 세션 상태가 변경된 경우 방 상태 표시 업데이트
+          if (payload.new.status !== payload.old?.status) {
+            updateRoomStatusIndicator(pin, payload.new.status === 'active');
+          }
+
           applySessionDataToClient(payload.new);
         }
       }
@@ -546,20 +590,94 @@ function subscribeToServerSession() {
     .subscribe();
 }
 
-// 클라이언트 화면에 서버 세션 데이터 반영
+// 방 상태 표시 업데이트
+function updateRoomStatusIndicator(pin, isActive) {
+  const options = roomSelect.querySelectorAll('option');
+
+  for (const option of options) {
+    if (option.value === pin) {
+      const baseText = option.textContent.replace(/[🟢⚫]/, '').trim();
+      option.textContent = `${baseText} ${isActive ? '🟢' : '⚫'}`;
+      break;
+    }
+  }
+}
+
+// 주기적으로 방 목록 갱신
+function initRoomListRefresh() {
+  setInterval(() => {
+    if (modeSelect.value === 'server') {
+      loadActiveRooms();
+    } else if (modeSelect.value === 'client') {
+      loadAllRooms();
+    }
+  }, 30000); // 30초마다 갱신
+}
+
+// 서버모드: 값 변경 시 DB에 저장 함수
+async function updateSession(pin, timerValue, stopwatchValue, examNumber, mode) {
+  if (!pin) return;
+  const { data, error } = await supabaseClient
+    .from('sessions')
+    .update({
+      timer_value: timerValue,
+      stopwatch_value: stopwatchValue,
+      exam_number: examNumber,
+      mode: mode,
+      updated_at: getSeoulISOString()
+    })
+    .eq('pin', pin);
+  if (error) {
+    console.error('DB 업데이트 실패:', error);
+  }
+}
+
+// 클라이언트 화면에 서버 세션 데이터 반영 (진행중이면 자동 실행)
 function applySessionDataToClient(data) {
   // 타이머/스탑워치/응시번호 UI에 값 반영
   if (data.mode === 'timer') {
-    timerDuration = Math.ceil(data.timer_value / 60000);
+    // 남은 시간 보정
+    let remain = data.timer_value;
+    if (data.ingox === 'running' && data.started_at) {
+      const now = new Date();
+      const startedAt = new Date(data.started_at.replace(' ', 'T') + '+09:00');
+      const elapsed = (now - startedAt) / 1000; // 초
+      remain = data.timer_value - elapsed * 1000;
+    }
+    timerDuration = Math.ceil(remain / 60000);
     elapsedTime = 0;
-    updateDisplay(data.timer_value);
+    updateDisplay(remain > 0 ? remain : 0);
     isStopwatchMode = false;
+    if (data.ingox === 'running' && remain > 0) startTimer();
+    else { isRunning = false; clearInterval(timer); }
   } else {
+    // 스탑워치 경과 시간 보정
+    let swValue = data.stopwatch_value;
+    if (data.ingox === 'running' && data.started_at) {
+      const now = new Date();
+      const startedAt = new Date(data.started_at.replace(' ', 'T') + '+09:00');
+      const elapsed = (now - startedAt) / 1000; // 초
+      swValue = data.stopwatch_value + elapsed * 1000;
+    }
     timerDuration = 0;
-    elapsedTime = data.stopwatch_value;
-    updateDisplay(data.stopwatch_value);
+    elapsedTime = swValue;
+    updateDisplay(swValue);
     isStopwatchMode = true;
+    if (data.ingox === 'running') startStopwatch();
+    else { isRunning = false; clearInterval(timer); }
   }
   examNumber = data.exam_number;
   updateExamNumber();
+}
+
+// --- status, started_at 동기화용 함수 추가 ---
+async function setSessionStatus(pin, status) {
+  await supabaseClient
+    .from('sessions')
+    .update({
+      ingox: status,
+      started_at: status === 'running' ? getSeoulISOString() : null,
+      updated_at: getSeoulISOString()
+    })
+    .eq('pin', pin);
 } 
