@@ -31,6 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  enableControls(); // 페이지 로드 시 기본 컨트롤 활성화
 });
 
 let timer;
@@ -91,6 +93,32 @@ let lastExamNumber = 0;
 let lastMode = '';
 let updateTimeout;
 let clientChannel = null;
+
+// --- 컨트롤 활성화/비활성화 함수 ---
+function enableControls() {
+  timeButtons.forEach(btn => btn.disabled = false);
+  const customMinutesEl = document.getElementById('custom-minutes');
+  if (customMinutesEl) customMinutesEl.disabled = false;
+  if (startBtn) startBtn.disabled = false;
+  if (pauseBtn) pauseBtn.disabled = false;
+  if (resetBtn) resetBtn.disabled = false;
+  if (plusBtn) plusBtn.disabled = false;
+  if (minusBtn) minusBtn.disabled = false;
+  console.log('Controls enabled.');
+}
+
+function disableClientControls() {
+  timeButtons.forEach(btn => btn.disabled = true);
+  const customMinutesEl = document.getElementById('custom-minutes');
+  if (customMinutesEl) customMinutesEl.disabled = true;
+  if (startBtn) startBtn.disabled = true;
+  if (pauseBtn) pauseBtn.disabled = true;
+  if (resetBtn) resetBtn.disabled = true;
+  if (plusBtn) plusBtn.disabled = true;
+  if (minusBtn) minusBtn.disabled = true;
+  console.log('Client controls disabled.');
+}
+// --- END 컨트롤 활성화/비활성화 함수 ---
 
 function debouncedUpdateSession(...args) {
   clearTimeout(updateTimeout);
@@ -402,6 +430,7 @@ function initModeDropdown() {
         // 서버 모드 선택 시
         console.log('서버 모드 선택됨');
         modeTitle.textContent = '서버 모드';
+        modeTitle.style.color = '#ffb300'; // 주황색으로 변경
         roomSelect.disabled = true; // 로딩 중에는 비활성화
         roomSelect.innerHTML = '<option value="">로딩 중...</option>';
 
@@ -409,12 +438,16 @@ function initModeDropdown() {
         setTimeout(() => {
           loadActiveRooms();
         }, 10);
+        enableControls(); // 서버 모드 시 컨트롤 활성화
       } else if (selectedMode === 'client') {
         // 클라이언트 모드 선택 시
         console.log('클라이언트 모드 선택됨');
         modeTitle.textContent = '클라이언트 모드';
+        modeTitle.style.color = '#ffb300'; // 주황색으로 변경 (서버 모드와 동일)
         roomSelect.disabled = true; // 로딩 중에는 비활성화
         roomSelect.innerHTML = '<option value="">로딩 중...</option>';
+        // 클라이언트 모드는 subscribeToServerSession 성공 시 disableClientControls 호출
+        // 실패하거나 방 미선택 시 enableControls 필요
 
         // 모드 선택 직후 방 목록 로드
         setTimeout(() => {
@@ -423,7 +456,9 @@ function initModeDropdown() {
       } else {
         console.log('모드 선택 취소됨');
         modeTitle.textContent = '모드 선택';
+        modeTitle.style.color = '#39c0ed'; // 원래 색상으로 변경
         roomSelect.disabled = true;
+        enableControls(); // 모드 미선택 시 컨트롤 활성화
       }
 
       // 서버/클라이언트 모드 전환 시 기존 활성화된 모드 비활성화
@@ -456,7 +491,16 @@ function initModeDropdown() {
       console.log('Length of selectedRoomNumString:', selectedRoomNumString ? String(selectedRoomNumString).length : 'N/A');
 
       if (!selectedRoomNumString) {
-        console.log('No Room Number selected (dropdown value is empty). Returning.');
+        console.log('No Room Number selected (dropdown value is empty). Clearing client subscription if any.'); // PIN -> Room Number
+        if (clientChannel) {
+          supabaseClient.removeChannel(clientChannel);
+          clientChannel = null;
+        }
+        if (modeSelect.value === 'client') {
+          modeTitle.textContent = '클라이언트 모드 (방을 선택해주세요)';
+          modeTitle.style.color = '#ffb300'; // 주황색으로 변경 (서버 모드와 동일)
+        }
+        enableControls(); // 방 미선택 시 컨트롤 활성화
         return;
       }
       const selectedRoomNum = parseInt(selectedRoomNumString, 10);
@@ -486,7 +530,7 @@ function initModeDropdown() {
 }
 
 // 활성화된 방 목록 로드 (서버 모드)
-async function loadActiveRooms() {
+async function loadActiveRooms(roomToSelect = null) {
   console.log('서버 모드 방 목록 로드 시작');
 
   try {
@@ -513,6 +557,10 @@ async function loadActiveRooms() {
 
     roomSelect.innerHTML = options;
     roomSelect.disabled = false;
+    if (roomToSelect !== null) {
+      roomSelect.value = String(roomToSelect);
+      console.log(`서버 모드 드롭다운에서 선택된 방 설정 시도: ${roomToSelect}`);
+    }
     console.log('Room list populated for server mode.');
 
   } catch (err) {
@@ -587,17 +635,19 @@ function activateServerMode(roomNumber) {
       } else {
         console.log('방이 활성화되었습니다:', roomNumber);
 
-        // 방 목록을 다시 로드하여 상태 표시 업데이트
+        // 방 목록을 다시 로드하여 상태 표시 업데이트 및 선택된 방 유지
         if (modeSelect.value === 'server') {
-          loadActiveRooms();
+          loadActiveRooms(currentRoomNum);
         }
       }
     });
 
-  // 서버 모드 활성화 표시 (사용자에게는 원래 문자열 PIN 표시)
+  // 서버 모드 활성화 표시 (사용자에게는 원래 문자열 PIN 표시 -> 방번호 표시)
   modeTitle.textContent = `서버 모드 (방번호: ${roomNumber})`;
+  modeTitle.style.color = '#ffb300'; // 주황색으로 변경
+  enableControls(); // 서버 모드 활성화 시 컨트롤 활성화
 
-  // 사용자에게 알림 (사용자에게는 원래 문자열 PIN 표시)
+  // 사용자에게 알림 (사용자에게는 원래 문자열 PIN 표시 -> 방번호 표시)
   alert(`서버 모드가 방번호 [${roomNumber}]으로 활성화되었습니다.`);
 
   // 서버 모드 관련 추가 기능 구현
@@ -632,6 +682,7 @@ async function deactivateServerMode() {
 
     // 모드 선택 UI 초기화
     modeTitle.textContent = '모드 선택';
+    modeTitle.style.color = '#39c0ed'; // 원래 색상으로 변경
     modeSelect.value = '';
     roomSelect.innerHTML = '<option value="">방 선택</option>';
     roomSelect.disabled = true;
@@ -658,6 +709,7 @@ async function deactivateServerMode() {
     if (customMinutesEl) {
       customMinutesEl.selectedIndex = 0;
     }
+    enableControls(); // 서버 모드 비활성화 시 컨트롤 활성화
 
     console.log('모든 값이 초기화되었습니다.');
     alert('서버 모드가 비활성화되고 모든 값이 초기화되었습니다.');
@@ -701,6 +753,8 @@ function subscribeToServerSession(roomNumber) {
 
       // 클라이언트 모드 표시 업데이트
       modeTitle.textContent = `클라이언트 모드 (방번호: ${roomNumber})`;
+      modeTitle.style.color = '#ffb300'; // 주황색으로 변경 (서버 모드와 동일)
+      disableClientControls(); // 클라이언트 모드 성공적 연결 시 컨트롤 비활성화
 
       applySessionDataToClient(data);
     });
@@ -737,8 +791,10 @@ function updateRoomStatusIndicator(roomNumber, isActive) {
   const options = roomSelect.querySelectorAll('option');
 
   for (const option of options) {
+    // option.value는 문자열이므로, roomNumber를 문자열로 변환하여 비교하거나, option.value를 숫자로 변환
     if (option.value === String(roomNumber)) {
-      const baseText = option.textContent.replace(/[🟢⚫]/, '').trim();
+      // 모든 기존 상태 표시(녹색 또는 검은색 동그라미)를 제거합니다.
+      const baseText = option.textContent.replace(/[🟢⚫]/g, '').trim(); // 'g' 플래그를 사용하여 모든 일치 항목을 제거
       option.textContent = `${baseText} ${isActive ? '🟢' : '⚫'}`;
       break;
     }
