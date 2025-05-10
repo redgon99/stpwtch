@@ -10,9 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
   updateExamNumber();
   updateDisplay(0);
 
-  // 주기적으로 방 목록 갱신 (30초마다)
-  initRoomListRefresh();
-
   // 커스텀 분 드롭다운 이벤트
   const customMinutesDropdown = document.getElementById('custom-minutes');
   if (customMinutesDropdown) {
@@ -21,6 +18,16 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!isNaN(minutes)) {
         setTimer(minutes);
         startTimer(); // 드롭다운 선택 시 즉시 타이머 시작
+
+        // 시간 값 변경 시 저장
+        if (isServerModeActive && currentRoomNum) {
+          updateSession(
+            currentRoomNum,
+            timerDuration * 60 * 1000, // 새로 설정된 타이머 시간
+            examNumber,
+            'timer'
+          );
+        }
       }
     });
   }
@@ -34,7 +41,7 @@ let timerDuration = 0; // 분 단위
 
 // 서버 모드 관련 변수
 let isServerModeActive = false;
-let currentPin = null;
+let currentRoomNum = null;
 
 // Supabase 설정 - 실제 프로젝트 값으로 교체 필요
 const SUPABASE_URL = 'https://hppcqgogwufilzjhcpuk.supabase.co';
@@ -94,28 +101,43 @@ function debouncedUpdateSession(...args) {
 
 function updateExamNumber() {
   examNumberDisplay.textContent = String(examNumber).padStart(2, '0');
-  // 상태가 변경되었을 때만 업데이트
-  if (isServerModeActive && currentPin &&
-    (lastExamNumber !== examNumber || lastMode !== (isStopwatchMode ? 'stopwatch' : 'timer'))) {
-    debouncedUpdateSession(
-      currentPin,
-      !isStopwatchMode ? (timerDuration * 60 * 1000 - elapsedTime) : 0,
-      isStopwatchMode ? elapsedTime : 0,
-      examNumber,
-      isStopwatchMode ? 'stopwatch' : 'timer'
-    );
-    lastExamNumber = examNumber;
-    lastMode = isStopwatchMode ? 'stopwatch' : 'timer';
-  }
+  // 동기화 비교 로직 제거 - 버튼 클릭 시 직접 updateSession 호출하는 방식으로 변경
 }
 
 plusBtn.addEventListener('click', () => {
-  if (examNumber < 99) examNumber++;
-  updateExamNumber();
+  if (examNumber < 99) {
+    const oldValue = examNumber; // 이전 값 저장
+    examNumber++;
+    updateExamNumber();
+
+    // 응시번호가 변경된 경우에만 DB에 직접 저장 (동기화 비교 없이)
+    if (isServerModeActive && currentRoomNum && oldValue !== examNumber) {
+      updateSession(
+        currentRoomNum,
+        !isStopwatchMode ? (timerDuration * 60 * 1000 - elapsedTime) : elapsedTime,
+        examNumber,
+        isStopwatchMode ? 'stopwatch' : 'timer'
+      );
+    }
+  }
 });
+
 minusBtn.addEventListener('click', () => {
-  if (examNumber > 0) examNumber--;
-  updateExamNumber();
+  if (examNumber > 0) {
+    const oldValue = examNumber; // 이전 값 저장
+    examNumber--;
+    updateExamNumber();
+
+    // 응시번호가 변경된 경우에만 DB에 직접 저장 (동기화 비교 없이)
+    if (isServerModeActive && currentRoomNum && oldValue !== examNumber) {
+      updateSession(
+        currentRoomNum,
+        !isStopwatchMode ? (timerDuration * 60 * 1000 - elapsedTime) : elapsedTime,
+        examNumber,
+        isStopwatchMode ? 'stopwatch' : 'timer'
+      );
+    }
+  }
 });
 
 function updateDisplay(timeValue) {
@@ -124,24 +146,23 @@ function updateDisplay(timeValue) {
   const milliseconds = Math.floor((timeValue % 1000) / 10);
   timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(2, '0')}`;
 
-  // 서버모드일 때 DB에 저장 - 1초마다만 업데이트
-  if (isServerModeActive && currentPin) {
-    if (Math.floor(elapsedTime / 1000) !== Math.floor((elapsedTime - 10) / 1000)) {
-      debouncedUpdateSession(
-        currentPin,
-        !isStopwatchMode ? timeValue : 0,
-        isStopwatchMode ? timeValue : 0,
-        examNumber,
-        isStopwatchMode ? 'stopwatch' : 'timer'
-      );
-    }
-  }
+  // 서버모드일 때 DB에 저장 - 1초마다만 업데이트하는 코드 삭제
 }
 
 function setTimer(minutes) {
   timerDuration = minutes;
   resetTimer();
   updateDisplay(timerDuration * 60 * 1000);
+
+  // 타이머 설정 시 현재 값 저장
+  if (isServerModeActive && currentRoomNum) {
+    updateSession(
+      currentRoomNum,
+      timerDuration * 60 * 1000, // 새로 설정된 타이머 시간
+      examNumber,
+      'timer'
+    );
+  }
 }
 
 timeButtons.forEach(button => {
@@ -149,6 +170,16 @@ timeButtons.forEach(button => {
     const minutes = parseInt(button.dataset.time);
     setTimer(minutes);
     startTimer(); // 버튼 클릭 시 즉시 타이머 시작
+
+    // 시간 값 변경 시 저장
+    if (isServerModeActive && currentRoomNum) {
+      updateSession(
+        currentRoomNum,
+        timerDuration * 60 * 1000, // 새로 설정된 타이머 시간
+        examNumber,
+        'timer'
+      );
+    }
   });
 });
 
@@ -156,12 +187,30 @@ function startTimer() {
   if (isRunning || timerDuration === 0) return;
   isRunning = true;
   startTime = Date.now() - elapsedTime;
+
+  // 타이머 시작 시 ingox 상태를 running으로 설정하고 started_at 값을 현재 시간으로 저장
+  if (isServerModeActive && currentRoomNum) {
+    setSessionStatus(currentRoomNum, 'running');
+  }
+
   timer = setInterval(() => {
     elapsedTime = Date.now() - startTime;
     const timeLeft = timerDuration * 60 * 1000 - elapsedTime;
     if (timeLeft <= 0) {
       stopTimer();
       updateDisplay(0);
+
+      // 타이머 종료 시 ingox 상태를 paused로 설정
+      if (isServerModeActive && currentRoomNum) {
+        setSessionStatus(currentRoomNum, 'paused');
+        // 시간 값 0으로 업데이트
+        updateSession(
+          currentRoomNum,
+          0, // 종료된 타이머 시간 (0)
+          examNumber,
+          'timer'
+        );
+      }
       return;
     }
     updateDisplay(timeLeft);
@@ -178,6 +227,13 @@ function stopTimer() {
   clearInterval(timer);
   isRunning = false;
   elapsedTime = 0;
+
+  // 추가: stopTimer 호출 시 ingox 상태가 paused로 설정되도록 보장
+  if (isServerModeActive && currentRoomNum) {
+    // 특정 조건(타이머 0 도달)에서만 호출하는 경우가 있으므로 중복해서 넣음
+    // 이 함수는 다른 곳에서도 호출될 수 있어 이 부분이 필요
+    setSessionStatus(currentRoomNum, 'paused');
+  }
 }
 
 function resetTimer() {
@@ -192,11 +248,29 @@ function startTimerOrStopwatch() {
   if (timerDuration > 0) {
     isStopwatchMode = false;
     startTimer();
-    if (isServerModeActive && currentPin) setSessionStatus(currentPin, 'running');
+    if (isServerModeActive && currentRoomNum) {
+      setSessionStatus(currentRoomNum, 'running');
+      // 시작 시 현재 값 저장
+      updateSession(
+        currentRoomNum,
+        timerDuration * 60 * 1000 - elapsedTime, // 남은 시간
+        examNumber,
+        'timer'
+      );
+    }
   } else {
     isStopwatchMode = true;
     startStopwatch();
-    if (isServerModeActive && currentPin) setSessionStatus(currentPin, 'running');
+    if (isServerModeActive && currentRoomNum) {
+      setSessionStatus(currentRoomNum, 'running');
+      // 시작 시 현재 값 저장
+      updateSession(
+        currentRoomNum,
+        elapsedTime, // 경과 시간
+        examNumber,
+        'stopwatch'
+      );
+    }
   }
 }
 
@@ -204,6 +278,12 @@ function startStopwatch() {
   if (isRunning) return;
   isRunning = true;
   startTime = Date.now() - elapsedTime;
+
+  // 스톱워치 시작 시 ingox 상태를 running으로 설정하고 started_at 값을 현재 시간으로 저장
+  if (isServerModeActive && currentRoomNum) {
+    setSessionStatus(currentRoomNum, 'running');
+  }
+
   timer = setInterval(() => {
     elapsedTime = Date.now() - startTime;
     updateDisplay(elapsedTime);
@@ -213,7 +293,16 @@ function startStopwatch() {
 function pauseAll() {
   clearInterval(timer);
   isRunning = false;
-  if (isServerModeActive && currentPin) setSessionStatus(currentPin, 'paused');
+  if (isServerModeActive && currentRoomNum) {
+    setSessionStatus(currentRoomNum, 'paused');
+    // 일시정지 시 현재 값 저장
+    updateSession(
+      currentRoomNum,
+      !isStopwatchMode ? (timerDuration * 60 * 1000 - elapsedTime) : elapsedTime,
+      examNumber,
+      isStopwatchMode ? 'stopwatch' : 'timer'
+    );
+  }
 }
 
 function resetAll() {
@@ -222,7 +311,16 @@ function resetAll() {
   elapsedTime = 0;
   timerDuration = 0;
   updateDisplay(0);
-  if (isServerModeActive && currentPin) setSessionStatus(currentPin, 'paused');
+  if (isServerModeActive && currentRoomNum) {
+    setSessionStatus(currentRoomNum, 'paused');
+    // 리셋 시 현재 값 저장
+    updateSession(
+      currentRoomNum,
+      0, // 리셋된 시간 (0)
+      examNumber,
+      isStopwatchMode ? 'stopwatch' : 'timer'
+    );
+  }
 }
 
 // 버튼 이벤트 리스너 - DOM 요소가 존재하는 경우에만 실행
@@ -272,17 +370,17 @@ document.addEventListener('fullscreenchange', updateFullscreenIcon);
 
 // 서울(Asia/Seoul) 시간 기준 yyyy-mm-dd hh:mm:ss 포맷 반환 함수
 function getSeoulISOString() {
+  // 현재 로컬 시간 사용
   const now = new Date();
-  // 서울 UTC+9
-  const offset = 9 * 60;
-  const local = new Date(now.getTime() + (offset - now.getTimezoneOffset()) * 60000);
+
   // yyyy-mm-dd hh:mm:ss 포맷
-  const yyyy = local.getFullYear();
-  const mm = String(local.getMonth() + 1).padStart(2, '0');
-  const dd = String(local.getDate()).padStart(2, '0');
-  const hh = String(local.getHours()).padStart(2, '0');
-  const min = String(local.getMinutes()).padStart(2, '0');
-  const ss = String(local.getSeconds()).padStart(2, '0');
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  const hh = String(now.getHours()).padStart(2, '0');
+  const min = String(now.getMinutes()).padStart(2, '0');
+  const ss = String(now.getSeconds()).padStart(2, '0');
+
   return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
 }
 
@@ -302,16 +400,26 @@ function initModeDropdown() {
 
       if (selectedMode === 'server') {
         // 서버 모드 선택 시
-        console.log('서버 모드 선택됨, loadActiveRooms 호출');
-        loadActiveRooms();
+        console.log('서버 모드 선택됨');
         modeTitle.textContent = '서버 모드';
-        roomSelect.disabled = false;
+        roomSelect.disabled = true; // 로딩 중에는 비활성화
+        roomSelect.innerHTML = '<option value="">로딩 중...</option>';
+
+        // 모드 선택 직후 방 목록 로드
+        setTimeout(() => {
+          loadActiveRooms();
+        }, 10);
       } else if (selectedMode === 'client') {
         // 클라이언트 모드 선택 시
-        console.log('클라이언트 모드 선택됨, loadAllRooms 호출');
-        loadAllRooms();
+        console.log('클라이언트 모드 선택됨');
         modeTitle.textContent = '클라이언트 모드';
-        roomSelect.disabled = false;
+        roomSelect.disabled = true; // 로딩 중에는 비활성화
+        roomSelect.innerHTML = '<option value="">로딩 중...</option>';
+
+        // 모드 선택 직후 방 목록 로드
+        setTimeout(() => {
+          loadAllRooms();
+        }, 10);
       } else {
         console.log('모드 선택 취소됨');
         modeTitle.textContent = '모드 선택';
@@ -334,19 +442,42 @@ function initModeDropdown() {
   }
 
   if (roomSelect) {
-    roomSelect.addEventListener('change', function () {
-      const selectedPin = this.value;
-      const selectedMode = modeSelect.value;
-      console.log('방 선택 변경됨:', selectedPin, '모드:', selectedMode);
+    // 드롭다운 클릭 이벤트 제거 (모드 선택 시 이미 로드됨)
 
-      if (!selectedPin) return;
+    roomSelect.addEventListener('change', function () {
+      const selectedRoomNumString = this.value;
+      const selectedMode = modeSelect.value;
+
+      // 디버깅을 위한 콘솔 로그 추가
+      console.log('--- Room Selection Changed ---');
+      console.log('Selected Mode:', selectedMode);
+      console.log('Selected Room Number from dropdown (this.value):', selectedRoomNumString);
+      console.log('Type of selectedRoomNumString:', typeof selectedRoomNumString);
+      console.log('Length of selectedRoomNumString:', selectedRoomNumString ? String(selectedRoomNumString).length : 'N/A');
+
+      if (!selectedRoomNumString) {
+        console.log('No Room Number selected (dropdown value is empty). Returning.');
+        return;
+      }
+      const selectedRoomNum = parseInt(selectedRoomNumString, 10);
+
+      const selectedOption = this.options[this.selectedIndex];
+      const roomStatus = selectedOption.dataset.status;
+      console.log('Selected Option data-status:', roomStatus);
 
       if (selectedMode === 'server') {
-        // 서버 모드에서 방 선택 시
-        activateServerMode(selectedPin);
+        console.log('Mode is Server. Activating server mode with Room Number:', selectedRoomNum);
+        activateServerMode(selectedRoomNum);
       } else if (selectedMode === 'client') {
-        // 클라이언트 모드에서 방 선택 시
-        subscribeToServerSession(selectedPin);
+        console.log('Mode is Client. Checking room status for Room Number:', selectedRoomNum);
+        if (roomStatus !== 'active') {
+          alert('활성화된 방을 선택해주세요.');
+          this.value = ''; // 선택 초기화
+          console.log('Inactive room selected. Alerted user and reset dropdown.');
+          return;
+        }
+        console.log('Active room selected. Attempting to subscribe to session with Room Number:', selectedRoomNum);
+        subscribeToServerSession(selectedRoomNum);
       }
     });
   } else {
@@ -357,51 +488,37 @@ function initModeDropdown() {
 // 활성화된 방 목록 로드 (서버 모드)
 async function loadActiveRooms() {
   console.log('서버 모드 방 목록 로드 시작');
-  roomSelect.disabled = true;
-  roomSelect.innerHTML = '<option value="">로딩 중...</option>';
 
   try {
-    // 방 선택 옵션만 추가
     let options = '<option value="">방 선택</option>';
-
-    // 클라이언트와 동일하게 모든 방 목록 가져오기 (status 조건 제거)
     console.log('Supabase 세션 데이터 요청 중...');
     const { data, error } = await supabaseClient
       .from('sessions')
-      .select('pin, status')
+      .select('room_num, status')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
 
-    // 최대 10개 방 표시
-    const rooms = data.slice(0, 10);
+    const rooms = data; // data.slice(0, 10) 대신 data를 직접 사용
+    console.log('Rooms data received from Supabase (for Server Mode):', rooms);
 
     rooms.forEach((room, index) => {
+      console.log(`Processing room (Server Mode): RoomNum=${room.room_num}, Type=${typeof room.room_num}, Status=${room.status}`);
+      const roomNumForValue = room.room_num;
+      const roomNumForDisplay = room.room_num;
       const isActive = room.status === 'active';
       const statusIndicator = isActive ? '🟢' : '⚫';
-      options += `<option value="${room.pin}">PIN: ${room.pin}</option>`;
+      options += `<option value="${roomNumForValue}" data-status="${room.status}">방번호: ${roomNumForDisplay} ${statusIndicator}</option>`;
     });
 
-    rooms.forEach((room, index) => {
-      const isActive = room.status === 'active';
-      const statusIndicator = isActive ? '🟢' : '⚫';
-      options += `<option value="${room.pin}">PIN: ${room.pin} ${statusIndicator}</option>`;
-    });
-
-    rooms.forEach((room, index) => {
-      const isActive = room.status === 'active';
-      const statusIndicator = isActive ? '🟢' : '⚫';
-      options += `<option value="${room.pin}">PIN: ${room.pin} ${statusIndicator}</option>`;
-    });
-
-    console.log('방 목록 생성 완료:', options);
     roomSelect.innerHTML = options;
     roomSelect.disabled = false;
+    console.log('Room list populated for server mode.');
 
   } catch (err) {
-    console.error('방 목록 로드 실패:', err);
+    console.error('(Server Mode) 방 목록 로드 실패:', err);
     roomSelect.innerHTML = '<option value="">방 목록 로드 실패</option>';
-    alert(`방 목록을 가져오는 중 오류가 발생했습니다: ${err.message || err}`);
+    alert(`(서버 모드) 방 목록을 가져오는 중 오류가 발생했습니다: ${err.message || err}`);
     setTimeout(() => {
       roomSelect.innerHTML = '<option value="">방 선택</option>';
       roomSelect.disabled = false;
@@ -409,39 +526,41 @@ async function loadActiveRooms() {
   }
 }
 
-// 모든 방 목록 로드 (클라이언트 모드)
+// 모든 방 목록 로드 (클라이언트 모드) - 이전 로직으로 복원
 async function loadAllRooms() {
-  roomSelect.disabled = true;
-  roomSelect.innerHTML = '<option value="">로딩 중...</option>';
+  console.log('클라이언트 모드 방 목록 로드 시작');
 
   try {
-    // 방 선택 옵션만 추가
     let options = '<option value="">방 선택</option>';
-
-    // 클라이언트와 동일하게 모든 방 목록 가져오기 (status 조건 제거)
     console.log('Supabase 세션 데이터 요청 중...');
     const { data, error } = await supabaseClient
       .from('sessions')
-      .select('pin, status')
+      .select('room_num, status')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
 
-    // 최대 10개 방 표시
-    const rooms = data.slice(0, 10);
+    const rooms = data; // data.slice(0, 10) 대신 data를 직접 사용
+    console.log('Rooms data received from Supabase (for Client Mode):', rooms);
 
     rooms.forEach((room, index) => {
+      console.log(`Processing room (Client Mode): RoomNum=${room.room_num}, Type=${typeof room.room_num}, Status=${room.status}`);
+      const roomNumForValue = room.room_num;
+      const roomNumForDisplay = room.room_num;
       const isActive = room.status === 'active';
       const statusIndicator = isActive ? '🟢' : '⚫';
-      options += `<option value="${room.pin}">PIN: ${room.pin} ${statusIndicator}</option>`;
+      // 클라이언트 모드: 비활성 방은 disabled 처리
+      options += `<option value="${roomNumForValue}" data-status="${room.status}" ${!isActive ? 'disabled' : ''}>방번호: ${roomNumForDisplay} ${statusIndicator}</option>`;
     });
 
     roomSelect.innerHTML = options;
     roomSelect.disabled = false;
+    console.log('Room list populated for client mode.');
 
   } catch (err) {
-    console.error('방 목록 로드 실패:', err);
+    console.error('(Client Mode) 방 목록 로드 실패:', err);
     roomSelect.innerHTML = '<option value="">방 목록 로드 실패</option>';
+    alert(`(클라이언트 모드) 방 목록을 가져오는 중 오류가 발생했습니다: ${err.message || err}`);
     setTimeout(() => {
       roomSelect.innerHTML = '<option value="">방 선택</option>';
       roomSelect.disabled = false;
@@ -450,9 +569,9 @@ async function loadAllRooms() {
 }
 
 // 서버 모드 활성화 함수 (수정)
-function activateServerMode(pin) {
+function activateServerMode(roomNumber) {
   isServerModeActive = true;
-  currentPin = pin;
+  currentRoomNum = roomNumber;
 
   // 방 상태를 active로 설정
   supabaseClient
@@ -461,12 +580,12 @@ function activateServerMode(pin) {
       status: 'active',
       updated_at: getSeoulISOString()
     })
-    .eq('pin', pin)
+    .eq('room_num', roomNumber)
     .then(({ error }) => {
       if (error) {
         console.error('방 활성화 실패:', error);
       } else {
-        console.log('방이 활성화되었습니다:', pin);
+        console.log('방이 활성화되었습니다:', roomNumber);
 
         // 방 목록을 다시 로드하여 상태 표시 업데이트
         if (modeSelect.value === 'server') {
@@ -475,19 +594,19 @@ function activateServerMode(pin) {
       }
     });
 
-  // 서버 모드 활성화 표시
-  modeTitle.textContent = `서버 모드 (PIN: ${pin})`;
+  // 서버 모드 활성화 표시 (사용자에게는 원래 문자열 PIN 표시)
+  modeTitle.textContent = `서버 모드 (방번호: ${roomNumber})`;
 
-  // 사용자에게 알림
-  alert(`서버 모드가 PIN [${pin}]으로 활성화되었습니다.`);
+  // 사용자에게 알림 (사용자에게는 원래 문자열 PIN 표시)
+  alert(`서버 모드가 방번호 [${roomNumber}]으로 활성화되었습니다.`);
 
   // 서버 모드 관련 추가 기능 구현
-  console.log('서버 모드 활성화됨 - PIN:', pin);
+  console.log('서버 모드 활성화됨 - 방번호:', roomNumber);
 }
 
 // 서버 모드 비활성화 함수 (수정)
 async function deactivateServerMode() {
-  if (!isServerModeActive || !currentPin) return;
+  if (!isServerModeActive || !currentRoomNum) return;
 
   try {
     // Supabase에서 현재 PIN의 상태를 'inactive'로 업데이트
@@ -497,7 +616,7 @@ async function deactivateServerMode() {
         status: 'inactive',
         updated_at: getSeoulISOString()
       })
-      .eq('pin', currentPin);
+      .eq('room_num', currentRoomNum);
 
     if (error) {
       console.error('세션 비활성화 실패:', error);
@@ -505,26 +624,43 @@ async function deactivateServerMode() {
       return;
     }
 
-    console.log('세션 비활성화 성공:', currentPin);
+    console.log('세션 비활성화 성공:', currentRoomNum);
 
-    // 로컬 상태 초기화
+    // 서버 모드 관련 변수 초기화
     isServerModeActive = false;
-    currentPin = null;
-    modeTitle.textContent = '서버 모드';
+    currentRoomNum = null;
 
-    // 타이머 상태 초기화
-    stopTimer();
+    // 모드 선택 UI 초기화
+    modeTitle.textContent = '모드 선택';
+    modeSelect.value = '';
+    roomSelect.innerHTML = '<option value="">방 선택</option>';
+    roomSelect.disabled = true;
+
+    // 타이머/스톱워치 상태 초기화
+    clearInterval(timer);
+    isRunning = false;
     elapsedTime = 0;
+    timerDuration = 0;
+    isStopwatchMode = false;
+    startTime = 0;
+
+    // 타이머 표시 초기화
     updateDisplay(0);
 
     // 응시번호 초기화
     examNumber = 0;
+    lastExamNumber = 0;
+    lastMode = '';
     updateExamNumber();
 
-    // 방 목록 다시 로드
-    if (modeSelect.value === 'server') {
-      loadActiveRooms();
+    // 모든 커스텀 선택 초기화 - DOM에서 직접 요소를 가져와서 초기화
+    const customMinutesEl = document.getElementById('custom-minutes');
+    if (customMinutesEl) {
+      customMinutesEl.selectedIndex = 0;
     }
+
+    console.log('모든 값이 초기화되었습니다.');
+    alert('서버 모드가 비활성화되고 모든 값이 초기화되었습니다.');
 
   } catch (err) {
     console.error('서버 모드 비활성화 오류:', err);
@@ -533,9 +669,15 @@ async function deactivateServerMode() {
 }
 
 // 클라이언트 모드 연결 함수 (수정)
-function subscribeToServerSession(pin) {
-  if (!pin || pin.length !== 4) {
-    alert('올바른 서버 PIN을 선택해주세요.');
+function subscribeToServerSession(roomNumber) {
+  // 함수 시작 시 전달받은 pin 값 로깅
+  console.log('--- Inside subscribeToServerSession ---');
+  console.log('Received Room Number for subscription:', roomNumber);
+  console.log('Type of received Room Number:', typeof roomNumber);
+
+  if (!roomNumber || isNaN(roomNumber) || roomNumber < 1) {
+    alert('올바른 서버 방번호를 선택해주세요.');
+    console.error('Invalid Room Number for subscription. Alerted user.', { room_num: roomNumber });
     return;
   }
 
@@ -549,38 +691,38 @@ function subscribeToServerSession(pin) {
   supabaseClient
     .from('sessions')
     .select('*')
-    .eq('pin', pin)
+    .eq('room_num', roomNumber)
     .single()
     .then(({ data, error }) => {
       if (error || !data) {
-        alert('해당 PIN의 서버 세션이 없습니다.');
+        alert('해당 방번호의 서버 세션이 없습니다.');
         return;
       }
 
       // 클라이언트 모드 표시 업데이트
-      modeTitle.textContent = `클라이언트 모드 (PIN: ${pin})`;
+      modeTitle.textContent = `클라이언트 모드 (방번호: ${roomNumber})`;
 
       applySessionDataToClient(data);
     });
 
   // 실시간 구독 - 필요한 필드만 선택
   clientChannel = supabaseClient
-    .channel('session-sync-' + pin)
+    .channel('session-sync-room-' + roomNumber)
     .on(
       'postgres_changes',
       {
         event: 'UPDATE',
         schema: 'public',
         table: 'sessions',
-        filter: `pin=eq.${pin}`,
+        filter: `room_num=eq.${roomNumber}`,
         // 필요한 필드만 선택
-        columns: ['timer_value', 'stopwatch_value', 'exam_number', 'mode', 'ingox', 'started_at', 'status']
+        columns: ['time_value', 'stopwatch_value', 'exam_number', 'mode', 'ingox', 'started_at', 'status', 'room_num']
       },
       (payload) => {
         if (payload.new) {
           // 세션 상태가 변경된 경우 방 상태 표시 업데이트
           if (payload.new.status !== payload.old?.status) {
-            updateRoomStatusIndicator(pin, payload.new.status === 'active');
+            updateRoomStatusIndicator(payload.new.room_num, payload.new.status === 'active');
           }
 
           applySessionDataToClient(payload.new);
@@ -591,11 +733,11 @@ function subscribeToServerSession(pin) {
 }
 
 // 방 상태 표시 업데이트
-function updateRoomStatusIndicator(pin, isActive) {
+function updateRoomStatusIndicator(roomNumber, isActive) {
   const options = roomSelect.querySelectorAll('option');
 
   for (const option of options) {
-    if (option.value === pin) {
+    if (option.value === String(roomNumber)) {
       const baseText = option.textContent.replace(/[🟢⚫]/, '').trim();
       option.textContent = `${baseText} ${isActive ? '🟢' : '⚫'}`;
       break;
@@ -603,30 +745,18 @@ function updateRoomStatusIndicator(pin, isActive) {
   }
 }
 
-// 주기적으로 방 목록 갱신
-function initRoomListRefresh() {
-  setInterval(() => {
-    if (modeSelect.value === 'server') {
-      loadActiveRooms();
-    } else if (modeSelect.value === 'client') {
-      loadAllRooms();
-    }
-  }, 30000); // 30초마다 갱신
-}
-
 // 서버모드: 값 변경 시 DB에 저장 함수
-async function updateSession(pin, timerValue, stopwatchValue, examNumber, mode) {
-  if (!pin) return;
+async function updateSession(roomNumber, timeValue, examNumber, mode) {
+  if (!roomNumber) return;
   const { data, error } = await supabaseClient
     .from('sessions')
     .update({
-      timer_value: timerValue,
-      stopwatch_value: stopwatchValue,
+      time_value: timeValue,
       exam_number: examNumber,
       mode: mode,
-      updated_at: getSeoulISOString()
+      updated_at: getSeoulISOString() // 현재 시간 저장
     })
-    .eq('pin', pin);
+    .eq('room_num', roomNumber);
   if (error) {
     console.error('DB 업데이트 실패:', error);
   }
@@ -634,44 +764,86 @@ async function updateSession(pin, timerValue, stopwatchValue, examNumber, mode) 
 
 // 클라이언트 화면에 서버 세션 데이터 반영 (진행중이면 자동 실행)
 function applySessionDataToClient(data) {
-  // 타이머/스탑워치/응시번호 UI에 값 반영
+  console.log('Applying session data to client. Raw data:', data); // Log raw data as object
+
+  const baseTimeValue = (typeof data.time_value === 'number' && !isNaN(data.time_value)) ? data.time_value : 0;
+  let calculatedTime = baseTimeValue;
+
+  if (data.ingox === 'running' && data.started_at) {
+    const startedAtTimestamp = new Date(data.started_at.replace(' ', 'T') + '+09:00'); // KST offset
+    if (!isNaN(startedAtTimestamp.getTime())) {
+      const now = new Date();
+      const elapsedMillis = now.getTime() - startedAtTimestamp.getTime();
+      if (data.mode === 'timer') {
+        calculatedTime = baseTimeValue - elapsedMillis;
+      } else { // stopwatch mode
+        calculatedTime = baseTimeValue + elapsedMillis;
+      }
+    } else {
+      console.warn('Invalid data.started_at received:', data.started_at, '- using baseTimeValue for calculations. CalculatedTime will be baseTimeValue.');
+      // calculatedTime remains baseTimeValue
+    }
+  }
+
+  // Ensure calculatedTime is not negative, default to 0 if it became NaN somehow (shouldn't with above)
+  calculatedTime = (typeof calculatedTime === 'number' && !isNaN(calculatedTime)) ? Math.max(0, calculatedTime) : 0;
+
+  console.log(`Applying data: mode=${data.mode}, ingox=${data.ingox}, baseTimeValue=${baseTimeValue}, final calculatedTime=${calculatedTime}`);
+
   if (data.mode === 'timer') {
-    // 남은 시간 보정
-    let remain = data.timer_value;
-    if (data.ingox === 'running' && data.started_at) {
-      const now = new Date();
-      const startedAt = new Date(data.started_at.replace(' ', 'T') + '+09:00');
-      const elapsed = (now - startedAt) / 1000; // 초
-      remain = data.timer_value - elapsed * 1000;
+    const actualRemainingTime = calculatedTime;
+
+    // Global timerDuration is assumed to be the original total duration in minutes.
+    // It is set by setTimer() or resetAll().
+    if (timerDuration > 0) {
+      elapsedTime = (timerDuration * 60 * 1000) - actualRemainingTime;
+      // Clamp elapsedTime to be within [0, totalDuration]
+      elapsedTime = Math.max(0, Math.min(elapsedTime, timerDuration * 60 * 1000));
+    } else {
+      // If no original timerDuration is set (e.g. client just joined an active timer session),
+      // we can't accurately set elapsedTime for startTimer to work based on an original total.
+      // Display will be correct, but starting might not resume from where it should relative to an original total.
+      elapsedTime = 0;
+      console.warn('Client timerDuration is 0. Timer may not (re)start correctly if it was part of a longer original duration.');
     }
-    timerDuration = Math.ceil(remain / 60000);
-    elapsedTime = 0;
-    updateDisplay(remain > 0 ? remain : 0);
+
+    updateDisplay(actualRemainingTime);
     isStopwatchMode = false;
-    if (data.ingox === 'running' && remain > 0) startTimer();
-    else { isRunning = false; clearInterval(timer); }
-  } else {
-    // 스탑워치 경과 시간 보정
-    let swValue = data.stopwatch_value;
-    if (data.ingox === 'running' && data.started_at) {
-      const now = new Date();
-      const startedAt = new Date(data.started_at.replace(' ', 'T') + '+09:00');
-      const elapsed = (now - startedAt) / 1000; // 초
-      swValue = data.stopwatch_value + elapsed * 1000;
+
+    if (data.ingox === 'running' && actualRemainingTime > 0) {
+      if (timerDuration > 0) { // Only attempt to start if we have an original duration
+        startTimer();
+      } else {
+        console.warn("Cannot start timer as client's original timerDuration is unknown (0). Displaying static time.");
+        isRunning = false; // Ensure it's not considered running
+        clearInterval(timer); // Clear any previous interval
+      }
+    } else {
+      isRunning = false;
+      clearInterval(timer);
+      if (actualRemainingTime <= 0) {
+        updateDisplay(0);
+      }
     }
+  } else { // stopwatch mode
+    const swValue = calculatedTime;
     timerDuration = 0;
-    elapsedTime = swValue;
+    elapsedTime = swValue; // For stopwatch, elapsedTime is the current count
     updateDisplay(swValue);
     isStopwatchMode = true;
-    if (data.ingox === 'running') startStopwatch();
-    else { isRunning = false; clearInterval(timer); }
+    if (data.ingox === 'running') {
+      startStopwatch();
+    } else {
+      isRunning = false;
+      clearInterval(timer);
+    }
   }
-  examNumber = data.exam_number;
+  examNumber = (typeof data.exam_number === 'number' && !isNaN(data.exam_number)) ? data.exam_number : 0;
   updateExamNumber();
 }
 
 // --- status, started_at 동기화용 함수 추가 ---
-async function setSessionStatus(pin, status) {
+async function setSessionStatus(roomNumber, status) {
   await supabaseClient
     .from('sessions')
     .update({
@@ -679,5 +851,5 @@ async function setSessionStatus(pin, status) {
       started_at: status === 'running' ? getSeoulISOString() : null,
       updated_at: getSeoulISOString()
     })
-    .eq('pin', pin);
+    .eq('room_num', roomNumber);
 } 
