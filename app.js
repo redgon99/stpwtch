@@ -16,17 +16,11 @@ document.addEventListener('DOMContentLoaded', () => {
     customMinutesDropdown.addEventListener('change', function () {
       const minutes = parseInt(this.value);
       if (!isNaN(minutes)) {
-        setTimer(minutes);
-        startTimer(); // 드롭다운 선택 시 즉시 타이머 시작
-
-        // 시간 값 변경 시 저장 - 중요한 상태 변경
+        setTimer(minutes); // setTimer 내부에서 DB 업데이트 처리 및 로컬 타이머 시작 준비
         if (isServerModeActive && currentRoomNum) {
-          immediateUpdateSession(
-            currentRoomNum,
-            timerDuration * 60 * 1000, // 새로 설정된 타이머 시간
-            examNumber,
-            'timer'
-          );
+          startTimerOrStopwatch(); // 타이머 설정 후 즉시 시작 및 DB 상태 업데이트 ('running' 등)
+        } else {
+          startTimer(); // 서버 모드가 아니면 로컬에서 바로 시작
         }
       }
     });
@@ -95,49 +89,22 @@ let updateTimeout;
 let clientChannel = null;
 
 // 디바운싱 함수들 - 업데이트 유형별 구분
-let statusUpdateTimeout;
-let runningUpdateTimeout;
+let runningUpdateTimeout; // for debouncedRunningUpdateSession (타이머/스톱워치 실행 중)
 
-// 일반 업데이트용 디바운싱 (1초)
+// 일반 업데이트용 디바운싱 (1초) - 응시번호 변경 등에 사용
 function debouncedUpdateSession(...args) {
   clearTimeout(updateTimeout);
   updateTimeout = setTimeout(() => {
-    updateSession(...args);
-  }, 1000); // 1초 디바운싱
+    updateSession(...args); // updateSession은 exam_number, mode, time_value 등을 업데이트
+  }, 1000);
 }
 
 // 실행 중 상태 업데이트용 디바운싱 (8초)
 function debouncedRunningUpdateSession(...args) {
   clearTimeout(runningUpdateTimeout);
   runningUpdateTimeout = setTimeout(() => {
-    updateSession(...args);
-  }, 8000); // 8초 디바운싱 (실행 중 상태)
-}
-
-// 중요한 상태 변경용 함수 (즉시 실행)
-function immediateUpdateSession(...args) {
-  // 대기 중인 모든 업데이트 취소
-  clearTimeout(updateTimeout);
-  clearTimeout(runningUpdateTimeout);
-  clearTimeout(statusUpdateTimeout);
-  // 즉시 실행
-  updateSession(...args);
-}
-
-// 상태 변경용 디바운싱 (1초)
-function debouncedSetSessionStatus(...args) {
-  clearTimeout(statusUpdateTimeout);
-  statusUpdateTimeout = setTimeout(() => {
-    setSessionStatus(...args);
-  }, 1000); // 1초 디바운싱
-}
-
-// 중요한 상태 변경용 함수 (즉시 실행)
-function immediateSetSessionStatus(...args) {
-  // 대기 중인 모든 업데이트 취소
-  clearTimeout(statusUpdateTimeout);
-  // 즉시 실행
-  setSessionStatus(...args);
+    updateSession(...args); // updateSession은 exam_number, mode, time_value 등을 업데이트
+  }, 8000);
 }
 
 // --- 컨트롤 활성화/비활성화 함수 ---
@@ -218,34 +185,41 @@ function updateDisplay(timeValue) {
 
 function setTimer(minutes) {
   timerDuration = minutes;
-  resetTimer();
-  updateDisplay(timerDuration * 60 * 1000);
+  resetTimer(); // 로컬 상태 리셋 (elapsedTime = 0, display 업데이트)
+  // updateDisplay(timerDuration * 60 * 1000); // resetTimer 내부에서 이미 호출됨
 
-  // 타이머 설정 시 현재 값 저장 - 중요한 상태 변경
+  // 타이머 설정 시 현재 값 저장 (중요한 상태 변경)
+  // 이 시점에서는 타이머를 '설정'한 것이지 '시작'한 것은 아닐 수 있음.
+  // UX에 따라 'paused' 상태로 시간 값만 업데이트 할 수도 있음.
+  // 현재는 즉시 시작하는 UX와 연동되므로, 이 DB 업데이트는 startTimerOrStopwatch에서 통합 관리.
   if (isServerModeActive && currentRoomNum) {
-    immediateUpdateSession(
-      currentRoomNum,
-      timerDuration * 60 * 1000, // 새로 설정된 타이머 시간
-      examNumber,
-      'timer'
-    );
+    console.log('서버: 타이머 시간 설정 DB 업데이트 (paused 상태로 값만 변경)');
+    supabaseClient
+      .from('sessions')
+      .update({
+        // ingox: 'paused', // 아직 시작 전이므로 paused 상태 유지 또는 명시.
+        // started_at: null,
+        time_value: timerDuration * 60 * 1000,
+        mode: 'timer',
+        exam_number: examNumber,
+        updated_at: getSeoulISOString()
+      })
+      .eq('room_num', currentRoomNum)
+      .then(({ error }) => {
+        if (error) console.error('타이머 시간 설정 DB 업데이트 실패:', error);
+        else console.log('타이머 시간 설정 DB 업데이트 성공 (paused 상태)');
+      });
   }
 }
 
 timeButtons.forEach(button => {
   button.addEventListener('click', () => {
     const minutes = parseInt(button.dataset.time);
-    setTimer(minutes);
-    startTimer(); // 버튼 클릭 시 즉시 타이머 시작
-
-    // 시간 값 변경 시 저장 - 중요한 상태 변경
+    setTimer(minutes); // 내부에서 DB 업데이트 (시간 값만, paused 상태로)
     if (isServerModeActive && currentRoomNum) {
-      immediateUpdateSession(
-        currentRoomNum,
-        timerDuration * 60 * 1000, // 새로 설정된 타이머 시간
-        examNumber,
-        'timer'
-      );
+      startTimerOrStopwatch(); // 타이머 설정 후 즉시 시작 및 DB 상태 업데이트 ('running' 등)
+    } else {
+      startTimer(); // 서버 모드가 아니면 로컬에서 바로 시작
     }
   });
 });
@@ -255,37 +229,43 @@ function startTimer() {
   isRunning = true;
   startTime = Date.now() - elapsedTime;
 
-  // 타이머 시작 시 ingox 상태를 running으로 설정하고 started_at 값을 현재 시간으로 저장
-  // 중요한 상태 변경이므로 즉시 업데이트
-  if (isServerModeActive && currentRoomNum) {
-    immediateSetSessionStatus(currentRoomNum, 'running');
-  }
+  // 타이머 시작 시 DB 업데이트는 startTimerOrStopwatch에서 통합 처리
+  // if (isServerModeActive && currentRoomNum) {
+  //   immediateSetSessionStatus(currentRoomNum, 'running');
+  // }
 
   timer = setInterval(() => {
     elapsedTime = Date.now() - startTime;
     const timeLeft = timerDuration * 60 * 1000 - elapsedTime;
     if (timeLeft <= 0) {
-      stopTimer();
+      // stopTimer(); // stopTimer는 로컬 상태만 변경. DB 업데이트는 여기서 직접 또는 상위에서.
+      clearInterval(timer);
+      isRunning = false;
+      // elapsedTime = timerDuration * 60 * 1000; // 정확히 종료 시간으로 설정
       updateDisplay(0);
 
-      // 타이머 종료 시 ingox 상태를 paused로 설정
-      // 중요한 상태 변경이므로 즉시 업데이트
+      // 타이머 종료 시 서버에 상태 전송
       if (isServerModeActive && currentRoomNum) {
-        immediateSetSessionStatus(currentRoomNum, 'paused');
-        // 시간 값 0으로 업데이트
-        immediateUpdateSession(
-          currentRoomNum,
-          0, // 종료된 타이머 시간 (0)
-          examNumber,
-          'timer'
-        );
+        console.log('서버 로컬 타이머 종료, DB 업데이트 시도');
+        supabaseClient
+          .from('sessions')
+          .update({
+            ingox: 'paused', // 타이머 종료는 'paused' 상태로 간주
+            time_value: 0,
+            started_at: null, // 종료되었으므로 started_at은 null
+            updated_at: getSeoulISOString()
+          })
+          .eq('room_num', currentRoomNum)
+          .then(({ error }) => {
+            if (error) console.error('타이머 종료 DB 업데이트 실패:', error);
+            else console.log('타이머 종료 DB 업데이트 성공');
+          });
       }
       return;
     }
 
     updateDisplay(timeLeft);
 
-    // 타이머 실행 중일 때는 긴 간격으로 업데이트
     if (isServerModeActive && currentRoomNum) {
       debouncedRunningUpdateSession(
         currentRoomNum,
@@ -306,51 +286,65 @@ function pauseTimer() {
 function stopTimer() {
   clearInterval(timer);
   isRunning = false;
-  elapsedTime = 0;
-
-  // 추가: stopTimer 호출 시 ingox 상태가 paused로 설정되도록 보장
-  // 중요한 상태 변경이므로 즉시 업데이트
-  if (isServerModeActive && currentRoomNum) {
-    // 특정 조건(타이머 0 도달)에서만 호출하는 경우가 있으므로 중복해서 넣음
-    // 이 함수는 다른 곳에서도 호출될 수 있어 이 부분이 필요
-    immediateSetSessionStatus(currentRoomNum, 'paused');
-  }
+  // elapsedTime = 0; // elapsedTime은 stop 시점의 값을 유지해야 할 수 있음. resetTimer에서 0으로 설정.
+  // DB 업데이트 로직은 이 함수를 호출하는 곳에서 처리 (예: startTimer 내부의 시간 종료 시, resetAll 등)
+  console.log('Local timer stopped. isRunning set to false.');
 }
 
-function resetTimer() {
+function resetTimer() { //주로 setTimer 내부에서 호출됨
   stopTimer();
   elapsedTime = 0;
-  updateDisplay(timerDuration * 60 * 1000);
+  updateDisplay(timerDuration * 60 * 1000); // timerDuration은 setTimer에서 설정된 값을 사용
+  // resetTimer 자체는 DB 업데이트를 하지 않음. setTimer가 필요시 DB 업데이트.
 }
 
 let isStopwatchMode = false;
 
 function startTimerOrStopwatch() {
-  if (timerDuration > 0) {
+  if (timerDuration > 0) { // Timer mode
     isStopwatchMode = false;
-    startTimer();
+    startTimer(); // 로컬 타이머 시작 (DB 호출 없음)
+
     if (isServerModeActive && currentRoomNum) {
-      immediateSetSessionStatus(currentRoomNum, 'running');
-      // 시작 시 현재 값 저장 - 중요한 상태 변경
-      immediateUpdateSession(
-        currentRoomNum,
-        timerDuration * 60 * 1000 - elapsedTime, // 남은 시간
-        examNumber,
-        'timer'
-      );
+      console.log('서버: 타이머 시작 DB 업데이트');
+      const initialTimeValue = timerDuration * 60 * 1000 - elapsedTime; // elapsedTime은 보통 0일 것
+      supabaseClient
+        .from('sessions')
+        .update({
+          ingox: 'running',
+          started_at: getSeoulISOString(),
+          time_value: initialTimeValue,
+          mode: 'timer',
+          exam_number: examNumber, // 응시번호도 함께 업데이트
+          updated_at: getSeoulISOString()
+        })
+        .eq('room_num', currentRoomNum)
+        .then(({ error }) => {
+          if (error) console.error('타이머 시작 DB 업데이트 실패:', error);
+          else console.log('타이머 시작 DB 업데이트 성공');
+        });
     }
-  } else {
+  } else { // Stopwatch mode
     isStopwatchMode = true;
-    startStopwatch();
+    startStopwatch(); // 로컬 스톱워치 시작 (DB 호출 없음)
+
     if (isServerModeActive && currentRoomNum) {
-      immediateSetSessionStatus(currentRoomNum, 'running');
-      // 시작 시 현재 값 저장 - 중요한 상태 변경
-      immediateUpdateSession(
-        currentRoomNum,
-        elapsedTime, // 경과 시간
-        examNumber,
-        'stopwatch'
-      );
+      console.log('서버: 스톱워치 시작 DB 업데이트');
+      supabaseClient
+        .from('sessions')
+        .update({
+          ingox: 'running',
+          started_at: getSeoulISOString(),
+          time_value: elapsedTime, // 스톱워치는 elapsedTime이 현재 값
+          mode: 'stopwatch',
+          exam_number: examNumber, // 응시번호도 함께 업데이트
+          updated_at: getSeoulISOString()
+        })
+        .eq('room_num', currentRoomNum)
+        .then(({ error }) => {
+          if (error) console.error('스톱워치 시작 DB 업데이트 실패:', error);
+          else console.log('스톱워치 시작 DB 업데이트 성공');
+        });
     }
   }
 }
@@ -360,17 +354,15 @@ function startStopwatch() {
   isRunning = true;
   startTime = Date.now() - elapsedTime;
 
-  // 스톱워치 시작 시 ingox 상태를 running으로 설정하고 started_at 값을 현재 시간으로 저장
-  // 중요한 상태 변경이므로 즉시 업데이트
-  if (isServerModeActive && currentRoomNum) {
-    immediateSetSessionStatus(currentRoomNum, 'running');
-  }
+  // 스톱워치 시작 시 DB 업데이트는 startTimerOrStopwatch에서 통합 처리
+  // if (isServerModeActive && currentRoomNum) {
+  //   immediateSetSessionStatus(currentRoomNum, 'running');
+  // }
 
   timer = setInterval(() => {
     elapsedTime = Date.now() - startTime;
     updateDisplay(elapsedTime);
 
-    // 스톱워치 실행 중일 때는 긴 간격으로 업데이트
     if (isServerModeActive && currentRoomNum) {
       debouncedRunningUpdateSession(
         currentRoomNum,
@@ -383,35 +375,54 @@ function startStopwatch() {
 }
 
 function pauseAll() {
-  clearInterval(timer);
-  isRunning = false;
+  clearInterval(timer); // 로컬 타이머/스톱워치 정지
+  isRunning = false;    // 로컬 상태 변경
+
   if (isServerModeActive && currentRoomNum) {
-    immediateSetSessionStatus(currentRoomNum, 'paused');
-    // 일시정지 시 현재 값 저장 - 중요한 상태 변경
-    immediateUpdateSession(
-      currentRoomNum,
-      !isStopwatchMode ? (timerDuration * 60 * 1000 - elapsedTime) : elapsedTime,
-      examNumber,
-      isStopwatchMode ? 'stopwatch' : 'timer'
-    );
+    console.log('서버: 일시정지 DB 업데이트');
+    const currentTimeValue = !isStopwatchMode ? (timerDuration * 60 * 1000 - elapsedTime) : elapsedTime;
+    supabaseClient
+      .from('sessions')
+      .update({
+        ingox: 'paused',
+        started_at: null, // 일시정지 시 started_at은 null
+        time_value: currentTimeValue,
+        // mode는 변경되지 않음
+        exam_number: examNumber, // 응시번호도 현재 상태 반영
+        updated_at: getSeoulISOString()
+      })
+      .eq('room_num', currentRoomNum)
+      .then(({ error }) => {
+        if (error) console.error('일시정지 DB 업데이트 실패:', error);
+        else console.log('일시정지 DB 업데이트 성공');
+      });
   }
 }
 
 function resetAll() {
-  clearInterval(timer);
-  isRunning = false;
+  clearInterval(timer); // 로컬 타이머/스톱워치 정지
+  isRunning = false;    // 로컬 상태 변경
   elapsedTime = 0;
-  timerDuration = 0;
-  updateDisplay(0);
+  timerDuration = 0;    // 로컬 타이머 시간도 리셋
+  updateDisplay(0);     // 로컬 디스플레이 업데이트
+
   if (isServerModeActive && currentRoomNum) {
-    immediateSetSessionStatus(currentRoomNum, 'paused');
-    // 리셋 시 현재 값 저장 - 중요한 상태 변경
-    immediateUpdateSession(
-      currentRoomNum,
-      0, // 리셋된 시간 (0)
-      examNumber,
-      isStopwatchMode ? 'stopwatch' : 'timer'
-    );
+    console.log('서버: 리셋 DB 업데이트');
+    supabaseClient
+      .from('sessions')
+      .update({
+        ingox: 'paused', // 리셋은 'paused' 상태로 간주
+        started_at: null,
+        time_value: 0,     // 리셋 시 시간 값은 0
+        mode: isStopwatchMode ? 'stopwatch' : 'timer', // 현재 모드 유지 또는 기본값 설정
+        exam_number: examNumber, // 응시번호는 현재 값 유지
+        updated_at: getSeoulISOString()
+      })
+      .eq('room_num', currentRoomNum)
+      .then(({ error }) => {
+        if (error) console.error('리셋 DB 업데이트 실패:', error);
+        else console.log('리셋 DB 업데이트 성공');
+      });
   }
 }
 
@@ -820,6 +831,8 @@ function subscribeToServerSession(roomNumber) {
       modeTitle.style.color = '#ffb300'; // 주황색으로 변경 (서버 모드와 동일)
       disableClientControls(); // 클라이언트 모드 성공적 연결 시 컨트롤 비활성화
 
+      // 최초 값 적용
+      console.log('최초 세션 데이터 적용:', data);
       applySessionDataToClient(data);
     });
 
@@ -833,8 +846,8 @@ function subscribeToServerSession(roomNumber) {
         schema: 'public',
         table: 'sessions',
         filter: `room_num=eq.${roomNumber}`,
-        // 필요한 필드만 선택
-        columns: ['time_value', 'stopwatch_value', 'exam_number', 'mode', 'ingox', 'started_at', 'status', 'room_num']
+        // 모든 관련 필드 포함
+        columns: ['time_value', 'stopwatch_value', 'exam_number', 'mode', 'ingox', 'started_at', 'status', 'room_num', 'updated_at']
       },
       (payload) => {
         if (payload.new) {
@@ -843,11 +856,21 @@ function subscribeToServerSession(roomNumber) {
             updateRoomStatusIndicator(payload.new.room_num, payload.new.status === 'active');
           }
 
+          console.log('실시간 세션 업데이트 감지:', payload.new);
+          // 실시간 업데이트 적용
           applySessionDataToClient(payload.new);
         }
       }
     )
-    .subscribe();
+    .subscribe((status) => {
+      console.log(`Subscription status: ${status}`);
+      if (status === 'SUBSCRIBED') {
+        console.log('실시간 동기화가 활성화되었습니다.');
+      } else if (status === 'CHANNEL_ERROR') {
+        console.error('실시간 동기화 연결에 실패했습니다.');
+        alert('서버와의 실시간 연결에 실패했습니다. 페이지를 새로고침하고 다시 시도해주세요.');
+      }
+    });
 }
 
 // 방 상태 표시 업데이트
@@ -865,20 +888,29 @@ function updateRoomStatusIndicator(roomNumber, isActive) {
   }
 }
 
-// 서버모드: 값 변경 시 DB에 저장 함수
+// 서버모드: 값 변경 시 DB에 저장 함수 (부분 업데이트용)
+//主に debouncedUpdateSession 와 debouncedRunningUpdateSession 에서 호출됩니다.
 async function updateSession(roomNumber, timeValue, examNumber, mode) {
-  if (!roomNumber) return;
+  if (!isServerModeActive || !roomNumber) return;
+  console.log(`Partial updateSession: room=${roomNumber}, time=${timeValue}, examNum=${examNumber}, mode=${mode}`);
+
+  const updateData = {};
+  if (timeValue !== undefined) updateData.time_value = timeValue;
+  if (examNumber !== undefined) updateData.exam_number = examNumber;
+  if (mode !== undefined) updateData.mode = mode;
+
+  if (Object.keys(updateData).length === 0) {
+    console.log('No data to update in updateSession');
+    return;
+  }
+  updateData.updated_at = getSeoulISOString();
+
   const { data, error } = await supabaseClient
     .from('sessions')
-    .update({
-      time_value: timeValue,
-      exam_number: examNumber,
-      mode: mode,
-      updated_at: getSeoulISOString() // 현재 시간 저장
-    })
+    .update(updateData)
     .eq('room_num', roomNumber);
   if (error) {
-    console.error('DB 업데이트 실패:', error);
+    console.error('DB partial update 실패:', error);
   }
 }
 
@@ -910,6 +942,15 @@ function applySessionDataToClient(data) {
 
   console.log(`Applying data: mode=${data.mode}, ingox=${data.ingox}, baseTimeValue=${baseTimeValue}, final calculatedTime=${calculatedTime}`);
 
+  // 현재 타이머/스톱워치 상태가 실행 중인지 여부 저장
+  const wasRunning = isRunning;
+
+  // 실행 중인 타이머가 있다면 정리
+  if (isRunning) {
+    clearInterval(timer);
+    isRunning = false;
+  }
+
   if (data.mode === 'timer') {
     const actualRemainingTimeMs = calculatedTime; // MS 단위
 
@@ -919,23 +960,20 @@ function applySessionDataToClient(data) {
     // 클라이언트의 타이머 실행 기준을 서버의 현재 상태에 맞게 재설정
     // timerDuration (전역 변수, 분 단위)을 현재 남은 시간으로 설정
     timerDuration = actualRemainingTimeMs / (60 * 1000);
-    // elapsedTime (전역 변수, ms 단위)을 0으로 설정하여,
-    // startTimer()가 이 "새로운" timerDuration부터 카운트다운하도록 함
+    // elapsedTime (전역 변수, ms 단위)을 0으로 설정
     elapsedTime = 0;
 
     if (data.ingox === 'running' && actualRemainingTimeMs > 0) {
-      // 서버에서 타이머가 실행 중이고 시간이 남아있으면 클라이언트 타이머 시작
+      // 서버 상태가 running이면 항상 타이머 시작 - 이전 상태 관계없이
+      console.log('타이머 실행 중 - 서버 상태 동기화: running');
       startTimer();
     } else {
       // 서버에서 타이머가 일시 중지되었거나 종료됨
+      console.log('타이머 중지됨 - 서버 상태 동기화: 일시정지 또는 종료');
       isRunning = false;
-      clearInterval(timer);
       if (actualRemainingTimeMs <= 0) {
         updateDisplay(0); // 시간이 다 되었으면 화면에 0 표시
-        // timerDuration과 elapsedTime은 이미 0 또는 0에 기반하여 설정됨
       }
-      // 일시 중지된 경우, updateDisplay는 이미 남은 시간을 표시했고,
-      // timerDuration과 elapsedTime은 이 상태를 반영하도록 설정됨.
     }
   } else { // stopwatch mode
     const swValue = calculatedTime;
@@ -943,25 +981,16 @@ function applySessionDataToClient(data) {
     elapsedTime = swValue; // For stopwatch, elapsedTime is the current count
     updateDisplay(swValue);
     isStopwatchMode = true;
+
     if (data.ingox === 'running') {
+      console.log('스톱워치 실행 중 - 서버 상태 동기화: running');
       startStopwatch();
     } else {
+      console.log('스톱워치 중지됨 - 서버 상태 동기화: 일시정지');
       isRunning = false;
-      clearInterval(timer);
     }
   }
+
   examNumber = (typeof data.exam_number === 'number' && !isNaN(data.exam_number)) ? data.exam_number : 0;
   updateExamNumber();
-}
-
-// --- status, started_at 동기화용 함수 추가 ---
-async function setSessionStatus(roomNumber, status) {
-  await supabaseClient
-    .from('sessions')
-    .update({
-      ingox: status,
-      started_at: status === 'running' ? getSeoulISOString() : null,
-      updated_at: getSeoulISOString()
-    })
-    .eq('room_num', roomNumber);
 } 
