@@ -19,9 +19,9 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimer(minutes);
         startTimer(); // 드롭다운 선택 시 즉시 타이머 시작
 
-        // 시간 값 변경 시 저장
+        // 시간 값 변경 시 저장 - 중요한 상태 변경
         if (isServerModeActive && currentRoomNum) {
-          updateSession(
+          immediateUpdateSession(
             currentRoomNum,
             timerDuration * 60 * 1000, // 새로 설정된 타이머 시간
             examNumber,
@@ -94,6 +94,52 @@ let lastMode = '';
 let updateTimeout;
 let clientChannel = null;
 
+// 디바운싱 함수들 - 업데이트 유형별 구분
+let statusUpdateTimeout;
+let runningUpdateTimeout;
+
+// 일반 업데이트용 디바운싱 (1초)
+function debouncedUpdateSession(...args) {
+  clearTimeout(updateTimeout);
+  updateTimeout = setTimeout(() => {
+    updateSession(...args);
+  }, 1000); // 1초 디바운싱
+}
+
+// 실행 중 상태 업데이트용 디바운싱 (8초)
+function debouncedRunningUpdateSession(...args) {
+  clearTimeout(runningUpdateTimeout);
+  runningUpdateTimeout = setTimeout(() => {
+    updateSession(...args);
+  }, 8000); // 8초 디바운싱 (실행 중 상태)
+}
+
+// 중요한 상태 변경용 함수 (즉시 실행)
+function immediateUpdateSession(...args) {
+  // 대기 중인 모든 업데이트 취소
+  clearTimeout(updateTimeout);
+  clearTimeout(runningUpdateTimeout);
+  clearTimeout(statusUpdateTimeout);
+  // 즉시 실행
+  updateSession(...args);
+}
+
+// 상태 변경용 디바운싱 (1초)
+function debouncedSetSessionStatus(...args) {
+  clearTimeout(statusUpdateTimeout);
+  statusUpdateTimeout = setTimeout(() => {
+    setSessionStatus(...args);
+  }, 1000); // 1초 디바운싱
+}
+
+// 중요한 상태 변경용 함수 (즉시 실행)
+function immediateSetSessionStatus(...args) {
+  // 대기 중인 모든 업데이트 취소
+  clearTimeout(statusUpdateTimeout);
+  // 즉시 실행
+  setSessionStatus(...args);
+}
+
 // --- 컨트롤 활성화/비활성화 함수 ---
 function enableControls() {
   timeButtons.forEach(btn => btn.disabled = false);
@@ -120,13 +166,6 @@ function disableClientControls() {
 }
 // --- END 컨트롤 활성화/비활성화 함수 ---
 
-function debouncedUpdateSession(...args) {
-  clearTimeout(updateTimeout);
-  updateTimeout = setTimeout(() => {
-    updateSession(...args);
-  }, 1000); // 1초 동안 추가 업데이트가 없을 때만 실행
-}
-
 function updateExamNumber() {
   examNumberDisplay.textContent = String(examNumber).padStart(2, '0');
   // 동기화 비교 로직 제거 - 버튼 클릭 시 직접 updateSession 호출하는 방식으로 변경
@@ -140,7 +179,7 @@ plusBtn.addEventListener('click', () => {
 
     // 응시번호가 변경된 경우에만 DB에 직접 저장 (동기화 비교 없이)
     if (isServerModeActive && currentRoomNum && oldValue !== examNumber) {
-      updateSession(
+      debouncedUpdateSession(
         currentRoomNum,
         !isStopwatchMode ? (timerDuration * 60 * 1000 - elapsedTime) : elapsedTime,
         examNumber,
@@ -158,7 +197,7 @@ minusBtn.addEventListener('click', () => {
 
     // 응시번호가 변경된 경우에만 DB에 직접 저장 (동기화 비교 없이)
     if (isServerModeActive && currentRoomNum && oldValue !== examNumber) {
-      updateSession(
+      debouncedUpdateSession(
         currentRoomNum,
         !isStopwatchMode ? (timerDuration * 60 * 1000 - elapsedTime) : elapsedTime,
         examNumber,
@@ -182,9 +221,9 @@ function setTimer(minutes) {
   resetTimer();
   updateDisplay(timerDuration * 60 * 1000);
 
-  // 타이머 설정 시 현재 값 저장
+  // 타이머 설정 시 현재 값 저장 - 중요한 상태 변경
   if (isServerModeActive && currentRoomNum) {
-    updateSession(
+    immediateUpdateSession(
       currentRoomNum,
       timerDuration * 60 * 1000, // 새로 설정된 타이머 시간
       examNumber,
@@ -199,9 +238,9 @@ timeButtons.forEach(button => {
     setTimer(minutes);
     startTimer(); // 버튼 클릭 시 즉시 타이머 시작
 
-    // 시간 값 변경 시 저장
+    // 시간 값 변경 시 저장 - 중요한 상태 변경
     if (isServerModeActive && currentRoomNum) {
-      updateSession(
+      immediateUpdateSession(
         currentRoomNum,
         timerDuration * 60 * 1000, // 새로 설정된 타이머 시간
         examNumber,
@@ -217,8 +256,9 @@ function startTimer() {
   startTime = Date.now() - elapsedTime;
 
   // 타이머 시작 시 ingox 상태를 running으로 설정하고 started_at 값을 현재 시간으로 저장
+  // 중요한 상태 변경이므로 즉시 업데이트
   if (isServerModeActive && currentRoomNum) {
-    setSessionStatus(currentRoomNum, 'running');
+    immediateSetSessionStatus(currentRoomNum, 'running');
   }
 
   timer = setInterval(() => {
@@ -229,10 +269,11 @@ function startTimer() {
       updateDisplay(0);
 
       // 타이머 종료 시 ingox 상태를 paused로 설정
+      // 중요한 상태 변경이므로 즉시 업데이트
       if (isServerModeActive && currentRoomNum) {
-        setSessionStatus(currentRoomNum, 'paused');
+        immediateSetSessionStatus(currentRoomNum, 'paused');
         // 시간 값 0으로 업데이트
-        updateSession(
+        immediateUpdateSession(
           currentRoomNum,
           0, // 종료된 타이머 시간 (0)
           examNumber,
@@ -241,7 +282,18 @@ function startTimer() {
       }
       return;
     }
+
     updateDisplay(timeLeft);
+
+    // 타이머 실행 중일 때는 긴 간격으로 업데이트
+    if (isServerModeActive && currentRoomNum) {
+      debouncedRunningUpdateSession(
+        currentRoomNum,
+        timeLeft,
+        examNumber,
+        'timer'
+      );
+    }
   }, 10);
 }
 
@@ -257,10 +309,11 @@ function stopTimer() {
   elapsedTime = 0;
 
   // 추가: stopTimer 호출 시 ingox 상태가 paused로 설정되도록 보장
+  // 중요한 상태 변경이므로 즉시 업데이트
   if (isServerModeActive && currentRoomNum) {
     // 특정 조건(타이머 0 도달)에서만 호출하는 경우가 있으므로 중복해서 넣음
     // 이 함수는 다른 곳에서도 호출될 수 있어 이 부분이 필요
-    setSessionStatus(currentRoomNum, 'paused');
+    immediateSetSessionStatus(currentRoomNum, 'paused');
   }
 }
 
@@ -277,9 +330,9 @@ function startTimerOrStopwatch() {
     isStopwatchMode = false;
     startTimer();
     if (isServerModeActive && currentRoomNum) {
-      setSessionStatus(currentRoomNum, 'running');
-      // 시작 시 현재 값 저장
-      updateSession(
+      immediateSetSessionStatus(currentRoomNum, 'running');
+      // 시작 시 현재 값 저장 - 중요한 상태 변경
+      immediateUpdateSession(
         currentRoomNum,
         timerDuration * 60 * 1000 - elapsedTime, // 남은 시간
         examNumber,
@@ -290,9 +343,9 @@ function startTimerOrStopwatch() {
     isStopwatchMode = true;
     startStopwatch();
     if (isServerModeActive && currentRoomNum) {
-      setSessionStatus(currentRoomNum, 'running');
-      // 시작 시 현재 값 저장
-      updateSession(
+      immediateSetSessionStatus(currentRoomNum, 'running');
+      // 시작 시 현재 값 저장 - 중요한 상태 변경
+      immediateUpdateSession(
         currentRoomNum,
         elapsedTime, // 경과 시간
         examNumber,
@@ -308,13 +361,24 @@ function startStopwatch() {
   startTime = Date.now() - elapsedTime;
 
   // 스톱워치 시작 시 ingox 상태를 running으로 설정하고 started_at 값을 현재 시간으로 저장
+  // 중요한 상태 변경이므로 즉시 업데이트
   if (isServerModeActive && currentRoomNum) {
-    setSessionStatus(currentRoomNum, 'running');
+    immediateSetSessionStatus(currentRoomNum, 'running');
   }
 
   timer = setInterval(() => {
     elapsedTime = Date.now() - startTime;
     updateDisplay(elapsedTime);
+
+    // 스톱워치 실행 중일 때는 긴 간격으로 업데이트
+    if (isServerModeActive && currentRoomNum) {
+      debouncedRunningUpdateSession(
+        currentRoomNum,
+        elapsedTime,
+        examNumber,
+        'stopwatch'
+      );
+    }
   }, 10);
 }
 
@@ -322,9 +386,9 @@ function pauseAll() {
   clearInterval(timer);
   isRunning = false;
   if (isServerModeActive && currentRoomNum) {
-    setSessionStatus(currentRoomNum, 'paused');
-    // 일시정지 시 현재 값 저장
-    updateSession(
+    immediateSetSessionStatus(currentRoomNum, 'paused');
+    // 일시정지 시 현재 값 저장 - 중요한 상태 변경
+    immediateUpdateSession(
       currentRoomNum,
       !isStopwatchMode ? (timerDuration * 60 * 1000 - elapsedTime) : elapsedTime,
       examNumber,
@@ -340,9 +404,9 @@ function resetAll() {
   timerDuration = 0;
   updateDisplay(0);
   if (isServerModeActive && currentRoomNum) {
-    setSessionStatus(currentRoomNum, 'paused');
-    // 리셋 시 현재 값 저장
-    updateSession(
+    immediateSetSessionStatus(currentRoomNum, 'paused');
+    // 리셋 시 현재 값 저장 - 중요한 상태 변경
+    immediateUpdateSession(
       currentRoomNum,
       0, // 리셋된 시간 (0)
       examNumber,
@@ -847,39 +911,31 @@ function applySessionDataToClient(data) {
   console.log(`Applying data: mode=${data.mode}, ingox=${data.ingox}, baseTimeValue=${baseTimeValue}, final calculatedTime=${calculatedTime}`);
 
   if (data.mode === 'timer') {
-    const actualRemainingTime = calculatedTime;
+    const actualRemainingTimeMs = calculatedTime; // MS 단위
 
-    // Global timerDuration is assumed to be the original total duration in minutes.
-    // It is set by setTimer() or resetAll().
-    if (timerDuration > 0) {
-      elapsedTime = (timerDuration * 60 * 1000) - actualRemainingTime;
-      // Clamp elapsedTime to be within [0, totalDuration]
-      elapsedTime = Math.max(0, Math.min(elapsedTime, timerDuration * 60 * 1000));
+    updateDisplay(actualRemainingTimeMs); // 현재 남은 시간을 화면에 표시
+    isStopwatchMode = false; // 타이머 모드임을 명확히 함
+
+    // 클라이언트의 타이머 실행 기준을 서버의 현재 상태에 맞게 재설정
+    // timerDuration (전역 변수, 분 단위)을 현재 남은 시간으로 설정
+    timerDuration = actualRemainingTimeMs / (60 * 1000);
+    // elapsedTime (전역 변수, ms 단위)을 0으로 설정하여,
+    // startTimer()가 이 "새로운" timerDuration부터 카운트다운하도록 함
+    elapsedTime = 0;
+
+    if (data.ingox === 'running' && actualRemainingTimeMs > 0) {
+      // 서버에서 타이머가 실행 중이고 시간이 남아있으면 클라이언트 타이머 시작
+      startTimer();
     } else {
-      // If no original timerDuration is set (e.g. client just joined an active timer session),
-      // we can't accurately set elapsedTime for startTimer to work based on an original total.
-      // Display will be correct, but starting might not resume from where it should relative to an original total.
-      elapsedTime = 0;
-      console.warn('Client timerDuration is 0. Timer may not (re)start correctly if it was part of a longer original duration.');
-    }
-
-    updateDisplay(actualRemainingTime);
-    isStopwatchMode = false;
-
-    if (data.ingox === 'running' && actualRemainingTime > 0) {
-      if (timerDuration > 0) { // Only attempt to start if we have an original duration
-        startTimer();
-      } else {
-        console.warn("Cannot start timer as client's original timerDuration is unknown (0). Displaying static time.");
-        isRunning = false; // Ensure it's not considered running
-        clearInterval(timer); // Clear any previous interval
-      }
-    } else {
+      // 서버에서 타이머가 일시 중지되었거나 종료됨
       isRunning = false;
       clearInterval(timer);
-      if (actualRemainingTime <= 0) {
-        updateDisplay(0);
+      if (actualRemainingTimeMs <= 0) {
+        updateDisplay(0); // 시간이 다 되었으면 화면에 0 표시
+        // timerDuration과 elapsedTime은 이미 0 또는 0에 기반하여 설정됨
       }
+      // 일시 중지된 경우, updateDisplay는 이미 남은 시간을 표시했고,
+      // timerDuration과 elapsedTime은 이 상태를 반영하도록 설정됨.
     }
   } else { // stopwatch mode
     const swValue = calculatedTime;

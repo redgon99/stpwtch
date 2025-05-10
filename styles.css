@@ -1,4 +1,13 @@
-@import url("https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap");
+/* @import url("https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap"); */
+
+/* Digital-7 폰트 불러오기 - vclock.kr과 유사한 디지털 시계 폰트 */
+@import url("https://fonts.cdnfonts.com/css/digital-7-mono");
+
+/* Roboto 글꼴 불러오기 - 응시번호용 */
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap");
+
+/* map.119survey.org/stopwatch/index.html 사이트와 동일한 글꼴 적용을 위한 Noto Sans KR 추가 */
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap");
 
 html,
 body {
@@ -74,16 +83,16 @@ body {
   width: 100%;
 }
 #timer {
-  font-family: "Share Tech Mono", monospace;
-  font-size: 7vw;
-  color: #ffb300;
-  letter-spacing: 0.1em;
-  text-shadow: 0 0 8px #ffb30099;
+  font-family: "Digital-7 Mono", "Digital-7", sans-serif;
+  font-size: 13vw; /* 크게 설정된 크기 유지 */
+  color: #ff9500; /* 첨부된 이미지의 주황색으로 변경 */
+  letter-spacing: 0.01em; /* 자간을 현재의 90%로 줄임 */
+  font-weight: normal;
 }
 
 .right-panel {
   flex: 0 0 35vw;
-  background: #0052cc;
+  background: #0039ac; /* 첨부 이미지의 짙은 파란색(로얄 블루) 배경 */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -95,41 +104,46 @@ body {
   font-size: 2.5vw;
   margin-bottom: 12px;
   letter-spacing: 0.1em;
+  font-weight: bold;
 }
 .exam-controls {
   display: flex;
-  gap: 10px;
-  margin-bottom: 16px;
+  gap: 30px;
+  margin-bottom: 20px;
 }
 .exam-btn {
-  background: #39c0ed;
+  background: #7ad7f7; /* 첨부 이미지의 하늘색 버튼 */
   border: none;
   color: #fff;
-  font-size: 1.5vw;
-  width: 2.5vw;
-  height: 2.5vw;
-  border-radius: 6px;
+  font-size: 3vw; /* 글꼴 크기 증가 */
+  width: 5vw; /* 너비 2배로 증가 */
+  height: 5vw; /* 높이 2배로 증가 */
+  border-radius: 8px;
   cursor: pointer;
   font-weight: bold;
   transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .exam-btn:hover {
-  background: #fff;
-  color: #39c0ed;
+  background: #5bc9f0; /* 호버 시 약간 더 어두운 하늘색 */
+  color: #fff;
 }
 .exam-number {
   color: #fff;
-  font-size: 10vw;
-  font-weight: bold;
+  font-size: 28vw;
+  font-weight: 700;
   line-height: 1;
   text-align: center;
-  margin-top: 10px;
-  font-family: "Arial Black", "Arial", sans-serif;
+  margin-top: 1px;
+  font-family: "Roboto", sans-serif; /* Google의 Roboto 글꼴로 변경 */
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100%;
   flex: 1;
+  border-radius: 20px;
 }
 
 .side-switches-row {
