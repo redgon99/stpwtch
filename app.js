@@ -16,12 +16,13 @@ document.addEventListener('DOMContentLoaded', () => {
     customMinutesDropdown.addEventListener('change', function () {
       const minutes = parseInt(this.value);
       if (!isNaN(minutes)) {
-        setTimer(minutes); // setTimer 내부에서 DB 업데이트 처리 및 로컬 타이머 시작 준비
-        if (isServerModeActive && currentRoomNum) {
-          startTimerOrStopwatch(); // 타이머 설정 후 즉시 시작 및 DB 상태 업데이트 ('running' 등)
-        } else {
-          startTimer(); // 서버 모드가 아니면 로컬에서 바로 시작
-        }
+        // 모든 타이머 버튼의 active 클래스 제거
+        document.querySelectorAll('.time-btn').forEach(btn => {
+          btn.classList.remove('active');
+        });
+        // 커스텀 드롭다운에 active 클래스 추가
+        this.classList.add('active');
+        setTimer(minutes);
       }
     });
   }
@@ -186,19 +187,27 @@ function updateDisplay(timeValue) {
 function setTimer(minutes) {
   timerDuration = minutes;
   resetTimer(); // 로컬 상태 리셋 (elapsedTime = 0, display 업데이트)
-  // updateDisplay(timerDuration * 60 * 1000); // resetTimer 내부에서 이미 호출됨
 
-  // 타이머 설정 시 현재 값 저장 (중요한 상태 변경)
-  // 이 시점에서는 타이머를 '설정'한 것이지 '시작'한 것은 아닐 수 있음.
-  // UX에 따라 'paused' 상태로 시간 값만 업데이트 할 수도 있음.
-  // 현재는 즉시 시작하는 UX와 연동되므로, 이 DB 업데이트는 startTimerOrStopwatch에서 통합 관리.
+  // 타이머 설정 시 버튼 색상 변경
+  document.querySelectorAll('.time-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  const activeButton = document.querySelector(`.time-btn[data-time="${minutes}"]`);
+  if (activeButton) {
+    activeButton.classList.add('active');
+  }
+
+  // 커스텀 드롭다운의 active 클래스 제거
+  const customMinutesDropdown = document.getElementById('custom-minutes');
+  if (customMinutesDropdown) {
+    customMinutesDropdown.classList.remove('active');
+  }
+
   if (isServerModeActive && currentRoomNum) {
     console.log('서버: 타이머 시간 설정 DB 업데이트 (paused 상태로 값만 변경)');
     supabaseClient
       .from('sessions')
       .update({
-        // ingox: 'paused', // 아직 시작 전이므로 paused 상태 유지 또는 명시.
-        // started_at: null,
         time_value: timerDuration * 60 * 1000,
         mode: 'timer',
         exam_number: examNumber,
@@ -216,11 +225,7 @@ timeButtons.forEach(button => {
   button.addEventListener('click', () => {
     const minutes = parseInt(button.dataset.time);
     setTimer(minutes); // 내부에서 DB 업데이트 (시간 값만, paused 상태로)
-    if (isServerModeActive && currentRoomNum) {
-      startTimerOrStopwatch(); // 타이머 설정 후 즉시 시작 및 DB 상태 업데이트 ('running' 등)
-    } else {
-      startTimer(); // 서버 모드가 아니면 로컬에서 바로 시작
-    }
+    // 타이머 설정 후 바로 시작하지 않음
   });
 });
 
@@ -229,20 +234,19 @@ function startTimer() {
   isRunning = true;
   startTime = Date.now() - elapsedTime;
 
-  // 타이머 시작 시 DB 업데이트는 startTimerOrStopwatch에서 통합 처리
-  // if (isServerModeActive && currentRoomNum) {
-  //   immediateSetSessionStatus(currentRoomNum, 'running');
-  // }
-
   timer = setInterval(() => {
     elapsedTime = Date.now() - startTime;
     const timeLeft = timerDuration * 60 * 1000 - elapsedTime;
     if (timeLeft <= 0) {
-      // stopTimer(); // stopTimer는 로컬 상태만 변경. DB 업데이트는 여기서 직접 또는 상위에서.
       clearInterval(timer);
       isRunning = false;
-      // elapsedTime = timerDuration * 60 * 1000; // 정확히 종료 시간으로 설정
       updateDisplay(0);
+
+      // 타이머 종료 시 버튼 색상 원래대로
+      const activeButton = document.querySelector(`.time-btn[data-time="${timerDuration}"]`);
+      if (activeButton) {
+        activeButton.classList.remove('active');
+      }
 
       // 타이머 종료 시 서버에 상태 전송
       if (isServerModeActive && currentRoomNum) {
@@ -250,9 +254,9 @@ function startTimer() {
         supabaseClient
           .from('sessions')
           .update({
-            ingox: 'paused', // 타이머 종료는 'paused' 상태로 간주
+            ingox: 'paused',
             time_value: 0,
-            started_at: null, // 종료되었으므로 started_at은 null
+            started_at: null,
             updated_at: getSeoulISOString()
           })
           .eq('room_num', currentRoomNum)
@@ -291,11 +295,16 @@ function stopTimer() {
   console.log('Local timer stopped. isRunning set to false.');
 }
 
-function resetTimer() { //주로 setTimer 내부에서 호출됨
+function resetTimer() {
   stopTimer();
   elapsedTime = 0;
-  updateDisplay(timerDuration * 60 * 1000); // timerDuration은 setTimer에서 설정된 값을 사용
-  // resetTimer 자체는 DB 업데이트를 하지 않음. setTimer가 필요시 DB 업데이트.
+  updateDisplay(timerDuration * 60 * 1000);
+
+  // 리셋 시 버튼 색상 원래대로
+  const activeButton = document.querySelector(`.time-btn[data-time="${timerDuration}"]`);
+  if (activeButton) {
+    activeButton.classList.remove('active');
+  }
 }
 
 let isStopwatchMode = false;
@@ -315,7 +324,7 @@ function startTimerOrStopwatch() {
           started_at: getSeoulISOString(),
           time_value: initialTimeValue,
           mode: 'timer',
-          exam_number: examNumber, // 응시번호도 함께 업데이트
+          exam_number: examNumber,
           updated_at: getSeoulISOString()
         })
         .eq('room_num', currentRoomNum)
@@ -335,9 +344,9 @@ function startTimerOrStopwatch() {
         .update({
           ingox: 'running',
           started_at: getSeoulISOString(),
-          time_value: elapsedTime, // 스톱워치는 elapsedTime이 현재 값
+          time_value: elapsedTime,
           mode: 'stopwatch',
-          exam_number: examNumber, // 응시번호도 함께 업데이트
+          exam_number: examNumber,
           updated_at: getSeoulISOString()
         })
         .eq('room_num', currentRoomNum)
@@ -400,22 +409,33 @@ function pauseAll() {
 }
 
 function resetAll() {
-  clearInterval(timer); // 로컬 타이머/스톱워치 정지
-  isRunning = false;    // 로컬 상태 변경
+  clearInterval(timer);
+  isRunning = false;
   elapsedTime = 0;
-  timerDuration = 0;    // 로컬 타이머 시간도 리셋
-  updateDisplay(0);     // 로컬 디스플레이 업데이트
+  timerDuration = 0;
+  updateDisplay(0);
+
+  // 모든 버튼의 active 클래스 제거
+  document.querySelectorAll('.time-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+
+  // 커스텀 드롭다운의 active 클래스 제거
+  const customMinutesDropdown = document.getElementById('custom-minutes');
+  if (customMinutesDropdown) {
+    customMinutesDropdown.classList.remove('active');
+  }
 
   if (isServerModeActive && currentRoomNum) {
     console.log('서버: 리셋 DB 업데이트');
     supabaseClient
       .from('sessions')
       .update({
-        ingox: 'paused', // 리셋은 'paused' 상태로 간주
+        ingox: 'paused',
         started_at: null,
-        time_value: 0,     // 리셋 시 시간 값은 0
-        mode: isStopwatchMode ? 'stopwatch' : 'timer', // 현재 모드 유지 또는 기본값 설정
-        exam_number: examNumber, // 응시번호는 현재 값 유지
+        time_value: 0,
+        mode: isStopwatchMode ? 'stopwatch' : 'timer',
+        exam_number: examNumber,
         updated_at: getSeoulISOString()
       })
       .eq('room_num', currentRoomNum)

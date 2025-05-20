@@ -67,11 +67,24 @@ body {
   border-radius: 4px;
   margin: 0 2px;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
 .time-btn:hover,
 .ctrl-btn:hover {
   background: #39c0ed;
+  color: #222831;
+}
+
+/* 타이머 실행 중일 때의 버튼 스타일 */
+.time-btn.active,
+.ctrl-btn.active {
+  border-color: #ff9500;
+  color: #ff9500;
+}
+
+.time-btn.active:hover,
+.ctrl-btn.active:hover {
+  background: #ff9500;
   color: #222831;
 }
 
