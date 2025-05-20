@@ -84,8 +84,8 @@ body {
 
 .time-btn.active:hover,
 .ctrl-btn.active:hover {
-  background: #ff9500;
-  color: #222831;
+  background-color: #ff9500; /* 활성 상태 호버 배경 색상 */
+  color: #fff; /* 활성 상태 호버 텍스트 색상 */
 }
 
 .timer-display {
@@ -233,6 +233,35 @@ body {
   background: #39c0ed22;
 }
 .fullscreen-btn svg {
+  display: block;
+}
+
+.top-right-icons {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+}
+
+.help-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px; /* fullscreen-btn과 동일하게 */
+  border-radius: 50%; /* fullscreen-btn과 동일하게 */
+  transition: background 0.2s; /* fullscreen-btn과 동일하게 */
+  display: flex; /* SVG를 중앙 정렬하기 위해 */
+  align-items: center; /* SVG를 중앙 정렬하기 위해 */
+  justify-content: center; /* SVG를 중앙 정렬하기 위해 */
+  margin-left: 8px; /* 전체화면 아이콘과의 간격 */
+}
+
+.help-btn:hover {
+  background: #39c0ed22; /* fullscreen-btn과 동일하게 */
+}
+
+.help-btn svg {
   display: block;
 }
 
@@ -443,4 +472,25 @@ body {
   background-color: #4a4e58 !important;
   color: #9095a0 !important;
   border-color: #5c616b !important;
+}
+
+/* 커스텀 분 선택 드롭다운 활성 상태 */
+#custom-minutes.active {
+  border: 2px solid #ff9500; /* 활성 상태 테두리 색상 */
+  color: #ff9500; /* 활성 상태 텍스트 색상 */
+  background-color: #2c2c2e; /* 활성 상태 배경색 (버튼과 유사하게) */
+  transition: border-color 0.3s ease, color 0.3s ease,
+    background-color 0.3s ease;
+}
+
+#custom-minutes.active:hover {
+  background-color: #ff9500; /* 활성 상태 호버 배경 색상 */
+  color: #fff; /* 활성 상태 호버 텍스트 색상 */
+}
+
+#custom-minutes.active:focus {
+  border-color: #ff9500; /* 활성 및 포커스 상태 테두리 색상 */
+  color: #ff9500; /* 활성 및 포커스 상태 텍스트 색상 */
+  background-color: #2c2c2e; /* 활성 및 포커스 상태 배경색 */
+  outline: none; /* 포커스 시 기본 아웃라인 제거 */
 }
