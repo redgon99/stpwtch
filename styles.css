@@ -242,23 +242,45 @@ body {
   right: 0;
   display: flex;
   align-items: center;
+  gap: 8px;
+}
+
+.menu-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 40px;
+}
+
+.menu-btn:hover {
+  background: #39c0ed22;
+}
+
+.menu-btn svg {
+  display: block;
 }
 
 .help-btn {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px; /* fullscreen-btn과 동일하게 */
-  border-radius: 50%; /* fullscreen-btn과 동일하게 */
-  transition: background 0.2s; /* fullscreen-btn과 동일하게 */
-  display: flex; /* SVG를 중앙 정렬하기 위해 */
-  align-items: center; /* SVG를 중앙 정렬하기 위해 */
-  justify-content: center; /* SVG를 중앙 정렬하기 위해 */
-  margin-left: 8px; /* 전체화면 아이콘과의 간격 */
+  padding: 4px;
+  border-radius: 50%;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 40px;
 }
 
 .help-btn:hover {
-  background: #39c0ed22; /* fullscreen-btn과 동일하게 */
+  background: #39c0ed22;
 }
 
 .help-btn svg {
@@ -493,4 +515,99 @@ body {
   color: #ff9500; /* 활성 및 포커스 상태 텍스트 색상 */
   background-color: #2c2c2e; /* 활성 및 포커스 상태 배경색 */
   outline: none; /* 포커스 시 기본 아웃라인 제거 */
+}
+
+/* 모달 스타일 */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+.modal.show {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background-color: #222831;
+  border: 2px solid #39c0ed;
+  border-radius: 8px;
+  width: 300px;
+  max-width: 90%;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #39c0ed;
+}
+
+.modal-header h2 {
+  color: #39c0ed;
+  margin: 0;
+  font-size: 1.5em;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #39c0ed;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  color: #ff9500;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.menu-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.menu-list li {
+  margin-bottom: 10px;
+}
+
+.menu-item {
+  display: block;
+  padding: 12px 15px;
+  color: #39c0ed;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: all 0.2s;
+  font-size: 1.1em;
+}
+
+.menu-item:hover {
+  background-color: #39c0ed;
+  color: #222831;
 }

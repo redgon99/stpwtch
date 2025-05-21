@@ -1013,4 +1013,51 @@ function applySessionDataToClient(data) {
 
   examNumber = (typeof data.exam_number === 'number' && !isNaN(data.exam_number)) ? data.exam_number : 0;
   updateExamNumber();
-} 
+}
+
+// 모달 관련 기능
+const menuBtn = document.querySelector('.menu-btn');
+const modal = document.getElementById('menu-modal');
+const closeBtn = document.querySelector('.close-btn');
+const menuItems = document.querySelectorAll('.menu-item');
+
+// 메뉴 버튼 클릭 시 모달 표시
+menuBtn.addEventListener('click', () => {
+  modal.classList.add('show');
+});
+
+// 닫기 버튼 클릭 시 모달 닫기
+closeBtn.addEventListener('click', () => {
+  modal.classList.remove('show');
+});
+
+// 모달 외부 클릭 시 모달 닫기
+modal.addEventListener('click', (e) => {
+  if (e.target === modal) {
+    modal.classList.remove('show');
+  }
+});
+
+// ESC 키 누를 때 모달 닫기
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && modal.classList.contains('show')) {
+    modal.classList.remove('show');
+  }
+});
+
+// 메뉴 아이템 클릭 이벤트
+menuItems.forEach(item => {
+  item.addEventListener('click', (e) => {
+    const type = item.dataset.type;
+    if (type === 'beginner') {
+      // 초급평가표 처리
+      console.log('초급평가표 클릭');
+      // TODO: 초급평가표 관련 기능 구현
+    } else if (type === 'intermediate') {
+      // 중급평가표 처리
+      console.log('중급평가표 클릭');
+      // TODO: 중급평가표 관련 기능 구현
+    }
+    // 도움말은 target="_blank"로 새 창에서 열리므로 별도 처리 불필요
+  });
+}); 

@@ -56,12 +56,7 @@
                   <polyline points="17,19.5 19.5,19.5 19.5,17" />
                 </svg>
               </button>
-              <a
-                href="help.html"
-                target="_blank"
-                class="help-btn"
-                title="도움말"
-              >
+              <button class="menu-btn" title="메뉴">
                 <svg
                   width="28"
                   height="28"
@@ -72,11 +67,11 @@
                   stroke-linecap="round"
                   stroke-linejoin="round"
                 >
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                  <line x1="3" y1="12" x2="21" y2="12"></line>
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <line x1="3" y1="18" x2="21" y2="18"></line>
                 </svg>
-              </a>
+              </button>
             </div>
           </div>
           <div class="timer-controls">
@@ -112,6 +107,31 @@
           <button class="exam-btn" id="plus-btn">+</button>
         </div>
         <div class="exam-number" id="exam-number">00</div>
+      </div>
+    </div>
+    <div class="modal" id="menu-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>메뉴</h2>
+          <button class="close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <ul class="menu-list">
+            <li>
+              <a href="est1.html" class="menu-item" data-type="beginner"
+                >초급평가표</a
+              >
+            </li>
+            <li>
+              <a href="est2.html" class="menu-item" data-type="intermediate"
+                >중급평가표</a
+              >
+            </li>
+            <li>
+              <a href="help.html" class="menu-item" target="_blank">도움말</a>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
