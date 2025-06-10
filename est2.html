@@ -797,6 +797,49 @@
       const headerTotalSpan = document.getElementById("headerTotal");
       let totalScore = 0;
 
+      // localStorage 키 상수
+      const STORAGE_KEY = "evaluation_data_intermediate";
+      const TOTAL_SCORE_KEY = "total_score_intermediate";
+
+      // 저장된 데이터 불러오기
+      function loadSavedData() {
+        const savedData = localStorage.getItem(STORAGE_KEY);
+        const savedTotalScore = localStorage.getItem(TOTAL_SCORE_KEY);
+
+        if (savedData) {
+          const selectedCells = JSON.parse(savedData);
+          selectedCells.forEach((cellData) => {
+            const row = tbody.children[cellData.rowIndex];
+            const cell = row.children[cellData.cellIndex];
+            const actionCell = row.querySelector(".action-cell");
+
+            cell.classList.add("selected");
+            cell.textContent = cell.getAttribute("data-value");
+            actionCell.classList.add("action-highlight");
+          });
+        }
+
+        if (savedTotalScore) {
+          totalScore = parseInt(savedTotalScore);
+          totalSpan.textContent = totalScore;
+          headerTotalSpan.textContent = totalScore;
+        }
+      }
+
+      // 데이터 저장하기
+      function saveData() {
+        const selectedCells = [];
+        document.querySelectorAll(".selected").forEach((cell) => {
+          const row = cell.parentElement;
+          const rowIndex = Array.from(tbody.children).indexOf(row);
+          const cellIndex = Array.from(row.children).indexOf(cell);
+          selectedCells.push({ rowIndex, cellIndex });
+        });
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedCells));
+        localStorage.setItem(TOTAL_SCORE_KEY, totalScore.toString());
+      }
+
       // Group rows by 항목 for rowspan logic
       function groupRowsByColumn(data, column) {
         const grouped = [];
@@ -891,6 +934,9 @@
           // Update total score in both places
           totalSpan.textContent = totalScore;
           headerTotalSpan.textContent = totalScore;
+
+          // 데이터 저장
+          saveData();
         }
       });
 
@@ -912,6 +958,10 @@
         totalScore = 0;
         totalSpan.textContent = totalScore;
         headerTotalSpan.textContent = totalScore;
+
+        // localStorage 데이터 삭제
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(TOTAL_SCORE_KEY);
       });
 
       // 참고사항 버튼 클릭 이벤트 수정
@@ -975,6 +1025,9 @@
           sidebar.classList.remove("active");
         }
       });
+
+      // 페이지 로드 시 저장된 데이터 불러오기
+      document.addEventListener("DOMContentLoaded", loadSavedData);
     </script>
   </body>
 </html>
