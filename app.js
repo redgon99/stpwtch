@@ -888,7 +888,32 @@ function subscribeToServerSession(roomNumber) {
         console.log('실시간 동기화가 활성화되었습니다.');
       } else if (status === 'CHANNEL_ERROR') {
         console.error('실시간 동기화 연결에 실패했습니다.');
-        alert('서버와의 실시간 연결에 실패했습니다. 페이지를 새로고침하고 다시 시도해주세요.');
+        // 재연결 시도
+        setTimeout(() => {
+          console.log('재연결 시도 중...');
+          if (clientChannel) {
+            supabaseClient.removeChannel(clientChannel);
+            clientChannel = null;
+          }
+          // 현재 선택된 방 번호로 재구독 시도
+          const currentRoom = roomSelect.value;
+          if (currentRoom) {
+            subscribeToServerSession(parseInt(currentRoom, 10));
+          }
+        }, 3000); // 3초 후 재연결 시도
+      } else if (status === 'CLOSED') {
+        console.log('구독이 종료되었습니다. 재연결 시도...');
+        // 구독이 종료된 경우에도 재연결 시도
+        setTimeout(() => {
+          if (clientChannel) {
+            supabaseClient.removeChannel(clientChannel);
+            clientChannel = null;
+          }
+          const currentRoom = roomSelect.value;
+          if (currentRoom) {
+            subscribeToServerSession(parseInt(currentRoom, 10));
+          }
+        }, 3000);
       }
     });
 }
