@@ -1,880 +1,900 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>중급지휘관 실기평가표</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 20px;
-        padding-top: 60px; /* 고정 헤더를 위한 상단 여백 추가 */
-      }
-      table {
-        margin-top: 20px;
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 10px;
-      }
-      th,
-      td {
-        border: 1px solid black;
-        padding: 8px;
-        text-align: center;
-      }
-      th {
-        background-color: #f2f2f2;
-      }
-      td.clickable {
-        cursor: pointer;
-      }
-      td.selected {
-        background-color: #c3c3c3; /* 셀 선택 시 배경 */
-      }
-      td.action-highlight {
-        background-color: #e6e6e6; /* 행동지표 셀 강조 */
-      }
-      .highlight {
-        background-color: yellow;
-        font-weight: bold;
-      }
-      #resetButton {
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        padding: 10px 20px;
-        font-size: 1rem;
-        cursor: pointer;
-        border: none;
-        border-radius: 5px;
-        background-color: #61dafb;
-        color: #282c34;
-        z-index: 901;
-      }
-      #refButton {
-        position: fixed;
-        top: 10px;
-        right: 80px;
-        padding: 10px 20px;
-        font-size: 1rem;
-        cursor: pointer;
-        border: none;
-        border-radius: 5px;
-        background-color: #7af880;
-        color: #282c34;
-        z-index: 901;
-      }
 
-      #resetButton:hover {
-        background-color: #ffe7d9;
-      }
-      td.orange-bg {
-        background-color: #ffe7d9; /* 배점 10점 셀의 배경색 */
-      }
-      h1 {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        background-color: white;
-        margin: 0;
-        padding: 15px;
-        text-align: center;
-        z-index: 900;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      }
-      .hide {
-        display: none;
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>중급지휘관 실기평가표</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      padding-top: 60px;
+      /* 고정 헤더를 위한 상단 여백 추가 */
+    }
 
-      /* 햄버거 메뉴 스타일 */
-      .hamburger-menu {
-        position: fixed;
-        top: 20px;
-        left: 20px;
-        cursor: pointer;
-        z-index: 901;
-        width: 30px;
-        height: 30px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background-color: #f8f9fa;
-        border-radius: 5px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      }
+    table {
+      margin-top: 20px;
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+    }
 
-      .hamburger-menu div {
-        width: 20px;
-        height: 2px;
-        background-color: #333;
-        position: absolute;
-        transition: 0.3s;
-      }
+    th,
+    td {
+      border: 1px solid black;
+      padding: 8px;
+      text-align: center;
+    }
 
-      .line1 {
-        transform: translateY(-6px);
-      }
-      .line2 {
-        opacity: 1;
-      }
-      .line3 {
-        transform: translateY(6px);
-      }
+    th {
+      background-color: #f2f2f2;
+    }
 
-      /* 활성화 상태 스타일 */
-      .hamburger-menu.active .line1 {
-        transform: rotate(45deg);
-      }
+    td.clickable {
+      cursor: pointer;
+    }
 
-      .hamburger-menu.active .line2 {
-        opacity: 0;
-      }
+    td.selected {
+      background-color: #c3c3c3;
+      /* 셀 선택 시 배경 */
+    }
 
-      .hamburger-menu.active .line3 {
-        transform: rotate(-45deg);
-      }
+    td.action-highlight {
+      background-color: #e6e6e6;
+      /* 행동지표 셀 강조 */
+    }
 
-      /* 사이드바 스타일 */
-      .sidebar {
-        display: none;
-        position: fixed;
-        left: -250px;
-        top: 0;
-        width: 250px;
-        height: 100%;
-        background-color: #f8f9fa;
-        transition: 0.3s;
-        padding: 60px 20px 20px;
-        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-        z-index: 999;
-      }
+    .highlight {
+      background-color: yellow;
+      font-weight: bold;
+    }
 
-      .sidebar.active {
-        display: block;
-        left: 0;
-      }
+    #resetButton {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      padding: 10px 20px;
+      font-size: 1rem;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      background-color: #61dafb;
+      color: #282c34;
+      z-index: 901;
+    }
 
-      .sidebar ul {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-      }
+    #refButton {
+      position: fixed;
+      top: 10px;
+      right: 80px;
+      padding: 10px 20px;
+      font-size: 1rem;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      background-color: #7af880;
+      color: #282c34;
+      z-index: 901;
+    }
 
-      .sidebar ul li {
-        padding: 15px 0;
-        border-bottom: 1px solid #ddd;
-      }
+    #resetButton:hover {
+      background-color: #ffe7d9;
+    }
 
-      .sidebar ul li:last-child {
-        border-bottom: none;
-      }
+    td.orange-bg {
+      background-color: #ffe7d9;
+      /* 배점 10점 셀의 배경색 */
+    }
 
-      .sidebar ul li a {
-        color: #333;
-        text-decoration: none;
-        font-size: 1rem;
-        display: block;
-        transition: 0.3s;
-      }
+    h1 {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background-color: white;
+      margin: 0;
+      padding: 15px;
+      text-align: center;
+      z-index: 900;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
 
-      .sidebar ul li a:hover {
-        color: #007bff;
-        padding-left: 10px;
-      }
+    .hide {
+      display: none;
+    }
 
-      /* Footer Styles */
-      footer {
-        background-color: #f8f9fa;
-        padding: 10px 0;
-        margin-top: 20px;
-        border-top: 1px solid #ddd;
-      }
+    /* 햄버거 메뉴 스타일 */
+    .hamburger-menu {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      cursor: pointer;
+      z-index: 901;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #f8f9fa;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
 
-      .footer-content {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 20px;
-        text-align: center;
-      }
+    .hamburger-menu div {
+      width: 20px;
+      height: 2px;
+      background-color: #333;
+      position: absolute;
+      transition: 0.3s;
+    }
 
-      .footer-info p {
-        margin: 3px 0;
-        color: #666;
-        font-size: 0.9rem;
-      }
+    .line1 {
+      transform: translateY(-6px);
+    }
 
-      .footer-bottom {
-        margin-top: 10px;
-        text-align: center;
-        color: #888;
-        font-size: 0.8rem;
-      }
-    </style>
-    <!-- Font Awesome CDN 추가 -->
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
-    />
-  </head>
-  <body>
-    <!-- 햄버거 메뉴 추가 -->
-    <div class="hamburger-menu">
-      <div class="line1"></div>
-      <div class="line2"></div>
-      <div class="line3"></div>
+    .line2 {
+      opacity: 1;
+    }
+
+    .line3 {
+      transform: translateY(6px);
+    }
+
+    /* 활성화 상태 스타일 */
+    .hamburger-menu.active .line1 {
+      transform: rotate(45deg);
+    }
+
+    .hamburger-menu.active .line2 {
+      opacity: 0;
+    }
+
+    .hamburger-menu.active .line3 {
+      transform: rotate(-45deg);
+    }
+
+    /* 사이드바 스타일 */
+    .sidebar {
+      display: none;
+      position: fixed;
+      left: -250px;
+      top: 0;
+      width: 250px;
+      height: 100%;
+      background-color: #f8f9fa;
+      transition: 0.3s;
+      padding: 60px 20px 20px;
+      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+      z-index: 999;
+    }
+
+    .sidebar.active {
+      display: block;
+      left: 0;
+    }
+
+    .sidebar ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .sidebar ul li {
+      padding: 15px 0;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .sidebar ul li:last-child {
+      border-bottom: none;
+    }
+
+    .sidebar ul li a {
+      color: #333;
+      text-decoration: none;
+      font-size: 1rem;
+      display: block;
+      transition: 0.3s;
+    }
+
+    .sidebar ul li a:hover {
+      color: #007bff;
+      padding-left: 10px;
+    }
+
+    /* Footer Styles */
+    footer {
+      background-color: #f8f9fa;
+      padding: 10px 0;
+      margin-top: 20px;
+      border-top: 1px solid #ddd;
+    }
+
+    .footer-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+      text-align: center;
+    }
+
+    .footer-info p {
+      margin: 3px 0;
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    .footer-bottom {
+      margin-top: 10px;
+      text-align: center;
+      color: #888;
+      font-size: 0.8rem;
+    }
+  </style>
+  <!-- Font Awesome CDN 추가 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+</head>
+
+<body>
+  <!-- 햄버거 메뉴 추가 -->
+  <div class="hamburger-menu">
+    <div class="line1"></div>
+    <div class="line2"></div>
+    <div class="line3"></div>
+  </div>
+
+  <!-- 사이드바 추가 -->
+  <div class="sidebar">
+    <ul>
+      <li>
+        <a href="index.html">스탑워치&응시번호</a>
+      </li>
+      <li>
+        <a href="est1.html">초급평가표</a>
+      </li>
+      <li>
+        <a href="est2.html">중급평가표</a>
+      </li>
+      <li>
+        <a href="est3.html">고급평가표</a>
+      </li>
+    </ul>
+  </div>
+
+  <h1>
+    중급 실기평가표
+    <span>(총점: <span id="headerTotal">0</span>점)</span>
+  </h1>
+  <button id="resetButton" title="초기화">
+    <i class="fas fa-redo"></i>
+  </button>
+  <button id="refButton" title="참고사항 숨기기">
+    <i class="fas fa-eye"></i>
+  </button>
+  <table id="evaluationTable">
+    <thead>
+      <tr>
+        <th>평가항목</th>
+        <th>행동지표</th>
+        <th>배점</th>
+        <th>상</th>
+        <th>중</th>
+        <th>하</th>
+        <th>참고사항</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Table rows dynamically populated -->
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="7">
+          총합: <span id="total" class="highlight">0</span> 점
+        </td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <footer>
+    <div class="footer-bottom">
+      <p>&copy; 2025 강원소방학교 지휘역량강화센터 . All rights reserved.</p>
     </div>
+  </footer>
 
-    <!-- 사이드바 추가 -->
-    <div class="sidebar">
-      <ul>
-        <li>
-          <a href="index.html">스탑워치&응시번호</a>
-        </li>
-        <li>
-          <a href="est1.html">초급평가표</a>
-        </li>
-        <li>
-          <a href="est2.html">중급평가표</a>
-        </li>
-      </ul>
-    </div>
+  <script>
+    // Evaluation Data
+    // const evaluationData = [
+    //   {
+    //     항목: "상황평가",
+    //     행동지표: "출동중 정보수집",
+    //     배점: 3,
+    //     상: 3,
+    //     중: 2,
+    //     하: 1,
+    //   },
+    //   {
+    //     항목: "상황평가",
+    //     행동지표: "선착대장 활동지원",
+    //     배점: 5,
+    //     상: 5,
+    //     중: 3,
+    //     하: 1,
+    //   },
+    //   {
+    //     항목: "상황평가",
+    //     행동지표: "지휘권 선언",
+    //     배점: 5,
+    //     상: 5,
+    //     중: 3,
+    //     하: 1,
+    //   },
+    //   {
+    //     항목: "상황평가",
+    //     행동지표: "최초 상황평가",
+    //     배점: 10,
+    //     상: 5,
+    //     중: 3,
+    //     하: 1,
+    //   },
+    //   {
+    //     항목: "상황평가",
+    //     행동지표: "추가 소방력 판단",
+    //     배점: 3,
+    //     상: 3,
+    //     중: 2,
+    //     하: 1,
+    //   },
 
-    <h1>
-      중급 실기평가표
-      <span>(총점: <span id="headerTotal">0</span>점)</span>
-    </h1>
-    <button id="resetButton" title="초기화">
-      <i class="fas fa-redo"></i>
-    </button>
-    <button id="refButton" title="참고사항 숨기기">
-      <i class="fas fa-eye"></i>
-    </button>
-    <table id="evaluationTable">
-      <thead>
-        <tr>
-          <th>평가항목</th>
-          <th>행동지표</th>
-          <th>배점</th>
-          <th>상</th>
-          <th>중</th>
-          <th>하</th>
-          <th>참고사항</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Table rows dynamically populated -->
-      </tbody>
-      <tfoot>
-        <tr>
-          <td colspan="7">
-            총합: <span id="total" class="highlight">0</span> 점
-          </td>
-        </tr>
-      </tfoot>
-    </table>
+    //   {
+    //     항목: "대응활동",
+    //     행동지표: "차량배치",
+    //     배점: 5,
+    //     상: 5,
+    //     중: 3,
+    //     하: 1,
+    //   },
+    //   {
+    //     항목: "대응활동",
+    //     행동지표: "표준대응활동",
+    //     배점: 5,
+    //     상: 5,
+    //     중: 3,
+    //     하: 1,
+    //   },
+    //   {
+    //     항목: "대응활동",
+    //     행동지표: "후착대 임무부여",
+    //     배점: 3,
+    //     상: 3,
+    //     중: 2,
+    //     하: 1,
+    //   },
+    //   {
+    //     항목: "대응활동",
+    //     행동지표: "위기대응 및 진행상황 관리",
+    //     배점: 5,
+    //     상: 5,
+    //     중: 3,
+    //     하: 1,
+    //   },
+    //   {
+    //     항목: "대응활동",
+    //     행동지표: "화재현장요소 파악 관리",
+    //     배점: 5,
+    //     상: 5,
+    //     중: 3,
+    //     하: 1,
+    //   },
+    //   {
+    //     항목: "대응활동",
+    //     행동지표: "단위지휘관 임무수행",
+    //     배점: 3,
+    //     상: 3,
+    //     중: 2,
+    //     하: 1,
+    //   },
 
-    <footer>
-      <div class="footer-bottom">
-        <p>&copy; 2025 강원소방학교 지휘역량강화센터 . All rights reserved.</p>
-      </div>
-    </footer>
+    //   {
+    //     항목: "화재전술",
+    //     행동지표: "소방용수",
+    //     배점: 5,
+    //     상: 5,
+    //     중: 3,
+    //     하: 1,
+    //   },
+    //   {
+    //     항목: "화재전술",
+    //     행동지표: "문개방 및 내부진입",
+    //     배점: 5,
+    //     상: 5,
+    //     중: 3,
+    //     하: 1,
+    //   },
+    //   {
+    //     항목: "화재전술",
+    //     행동지표: "수관전개 주수 및 관창배치",
+    //     배점: 5,
+    //     상: 5,
+    //     중: 3,
+    //     하: 1,
+    //   },
+    //   { 항목: "화재전술", 행동지표: "배연", 배점: 5, 상: 5, 중: 3, 하: 1 },
 
-    <script>
-      // Evaluation Data
-      // const evaluationData = [
-      //   {
-      //     항목: "상황평가",
-      //     행동지표: "출동중 정보수집",
-      //     배점: 3,
-      //     상: 3,
-      //     중: 2,
-      //     하: 1,
-      //   },
-      //   {
-      //     항목: "상황평가",
-      //     행동지표: "선착대장 활동지원",
-      //     배점: 5,
-      //     상: 5,
-      //     중: 3,
-      //     하: 1,
-      //   },
-      //   {
-      //     항목: "상황평가",
-      //     행동지표: "지휘권 선언",
-      //     배점: 5,
-      //     상: 5,
-      //     중: 3,
-      //     하: 1,
-      //   },
-      //   {
-      //     항목: "상황평가",
-      //     행동지표: "최초 상황평가",
-      //     배점: 10,
-      //     상: 5,
-      //     중: 3,
-      //     하: 1,
-      //   },
-      //   {
-      //     항목: "상황평가",
-      //     행동지표: "추가 소방력 판단",
-      //     배점: 3,
-      //     상: 3,
-      //     중: 2,
-      //     하: 1,
-      //   },
+    //   {
+    //     항목: "의사교환",
+    //     행동지표: "무전교신 원칙",
+    //     배점: 5,
+    //     상: 5,
+    //     중: 3,
+    //     하: 1,
+    //   },
+    //   {
+    //     항목: "의사교환",
+    //     행동지표: "정보 전달력",
+    //     배점: 5,
+    //     상: 5,
+    //     중: 3,
+    //     하: 1,
+    //   },
+    //   {
+    //     항목: "의사교환",
+    //     행동지표: "지휘팀장 도착 후 상황보고",
+    //     배점: 5,
+    //     상: 5,
+    //     중: 3,
+    //     하: 1,
+    //   },
 
-      //   {
-      //     항목: "대응활동",
-      //     행동지표: "차량배치",
-      //     배점: 5,
-      //     상: 5,
-      //     중: 3,
-      //     하: 1,
-      //   },
-      //   {
-      //     항목: "대응활동",
-      //     행동지표: "표준대응활동",
-      //     배점: 5,
-      //     상: 5,
-      //     중: 3,
-      //     하: 1,
-      //   },
-      //   {
-      //     항목: "대응활동",
-      //     행동지표: "후착대 임무부여",
-      //     배점: 3,
-      //     상: 3,
-      //     중: 2,
-      //     하: 1,
-      //   },
-      //   {
-      //     항목: "대응활동",
-      //     행동지표: "위기대응 및 진행상황 관리",
-      //     배점: 5,
-      //     상: 5,
-      //     중: 3,
-      //     하: 1,
-      //   },
-      //   {
-      //     항목: "대응활동",
-      //     행동지표: "화재현장요소 파악 관리",
-      //     배점: 5,
-      //     상: 5,
-      //     중: 3,
-      //     하: 1,
-      //   },
-      //   {
-      //     항목: "대응활동",
-      //     행동지표: "단위지휘관 임무수행",
-      //     배점: 3,
-      //     상: 3,
-      //     중: 2,
-      //     하: 1,
-      //   },
+    //   {
+    //     항목: "핵심목표",
+    //     행동지표: "인명구조 목표달성의 적절성",
+    //     배점: 10,
+    //     상: 10,
+    //     중: 7,
+    //     하: 4,
+    //   },
+    //   {
+    //     항목: "핵심목표",
+    //     행동지표: "출동대 안전관리",
+    //     배점: 5,
+    //     상: 5,
+    //     중: 3,
+    //     하: 1,
+    //   },
+    // ];
 
-      //   {
-      //     항목: "화재전술",
-      //     행동지표: "소방용수",
-      //     배점: 5,
-      //     상: 5,
-      //     중: 3,
-      //     하: 1,
-      //   },
-      //   {
-      //     항목: "화재전술",
-      //     행동지표: "문개방 및 내부진입",
-      //     배점: 5,
-      //     상: 5,
-      //     중: 3,
-      //     하: 1,
-      //   },
-      //   {
-      //     항목: "화재전술",
-      //     행동지표: "수관전개 주수 및 관창배치",
-      //     배점: 5,
-      //     상: 5,
-      //     중: 3,
-      //     하: 1,
-      //   },
-      //   { 항목: "화재전술", 행동지표: "배연", 배점: 5, 상: 5, 중: 3, 하: 1 },
+    // 위 evaluationData 데이터를 서식을 지켜서 한줄로 표시
+    const evaluationData = [
+      {
+        항목: "상황평가",
+        행동지표: "출동중 정보수집 및 임무공유",
+        배점: 3,
+        상: 3,
+        중: 2,
+        하: 1,
+        참고사항:
+          "상황실, 선착대장 무전을 통해 정보파악 및 상황판작성<br>상황을 추정하고 대응활동 구상 및 전파",
+      },
+      {
+        항목: "상황평가",
+        행동지표: "선착대장 활동지원",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "선착대장과 무전을 통해 현장상황 파악 및 활동지원<br>(후착대 배치, 임무조정, 특수차 부서 등등)",
+      },
+      {
+        항목: "상황평가",
+        행동지표: "지휘권 선언",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "상황평가(육안) → 브리핑 → 지휘 선언 → 상세상황평가<br>급박한 경우 도착 즉시 지휘선언 가능",
+      },
+      {
+        항목: "상황평가",
+        행동지표: "최초 상황평가",
+        배점: 10,
+        상: 10,
+        중: 7,
+        하: 4,
+        참고사항:
+          "ABCD, 둘러보는 상황평가(구조대상자+화재+연소확대 예측)<br>중요정보 및 활동파악(내부+외부), 추가소방력 요청<br>고정지휘(적정위치), 전략선택(공격전략), 핵심목표까지",
+      },
+      {
+        항목: "상황평가",
+        행동지표: "중요정보 파악",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항: "인명정보, 주요화재현장요소, 출동대 배치, 구조대상자 파악",
+      },
+      {
+        항목: "지휘 의사결정",
+        행동지표: "선착대 대응활동 유효성 판단",
+        배점: 3,
+        상: 3,
+        중: 2,
+        하: 1,
+        참고사항: "대응활동 적절성 판단, 필요시 전략,전술,임무변경",
+      },
+      {
+        항목: "지휘 의사결정",
+        행동지표: "현장 위험성 판단",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "발생가능한 위험요인 판단(건물, 위험물질, 최성기, 연소확대)",
+      },
+      {
+        항목: "지휘 의사결정",
+        행동지표: "핵심목표(대응 지침) 제시",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "상황평가와 위험성판단을 근거로 핵심목표 제시<br>(예, 2층 노래방의 인명구조에 집중할 것)상황변화시 변경가능",
+      },
+      {
+        항목: "지휘 의사결정",
+        행동지표: "1차 출동대 임무지시 및 조정",
+        배점: 10,
+        상: 10,
+        중: 7,
+        하: 4,
+        참고사항:
+          "임무대기 무전시 바로 중요사항에 우선적으로 배치<br>(전술우선순위 기반 구체적 임무지시)",
+      },
+      {
+        항목: "지휘 의사결정",
+        행동지표: "추가 자원 요청",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "최초 상황평가때 요청(특수차량 + 유관기관)<br>교대소방력을 고려한 충분한 자원 요청(필요시 대응단계)",
+      },
 
-      //   {
-      //     항목: "의사교환",
-      //     행동지표: "무전교신 원칙",
-      //     배점: 5,
-      //     상: 5,
-      //     중: 3,
-      //     하: 1,
-      //   },
-      //   {
-      //     항목: "의사교환",
-      //     행동지표: "정보 전달력",
-      //     배점: 5,
-      //     상: 5,
-      //     중: 3,
-      //     하: 1,
-      //   },
-      //   {
-      //     항목: "의사교환",
-      //     행동지표: "지휘팀장 도착 후 상황보고",
-      //     배점: 5,
-      //     상: 5,
-      //     중: 3,
-      //     하: 1,
-      //   },
+      {
+        항목: "대응활동",
+        행동지표: "차량배치 조정",
+        배점: 10,
+        상: 10,
+        중: 7,
+        하: 4,
+        참고사항:
+          "대기1단계(회차가능), 대기2단계(자원대기소) 운영<br>특수차 공간확보, 1선펌프차, 중요물탱크 지정하는지",
+      },
+      {
+        항목: "대응활동",
+        행동지표: "소방활동구역 설정 및 통제",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항: "통제선 설치, 1통제선(소방). 2통제선(경찰)",
+      },
+      {
+        항목: "대응활동",
+        행동지표: "소방용수공급체계 구축",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "소화전, 1선펌프, 중요물탱크 급수체계 확보지시<br>인근에 소화전이 없는 경우 물탱크차 순환보수 전술",
+      },
+      {
+        항목: "대응활동",
+        행동지표: "(단계별)소방력 배치 및 조정",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "3단계 소방력 배치 모델 적용여부<br>상황변화에 따라 배치 조정",
+      },
+      {
+        항목: "대응활동",
+        행동지표: "현장분할 및 단위지휘관 운영",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "지리적(2층).기능적(임무) 분할 단위지휘관 운영<br>ABCD, (단위지휘관과 소속대 + 임무 통보)",
+      },
+      {
+        항목: "대응활동",
+        행동지표: "출동대 교대관리",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "교대조 운영(직전대기), 예비용기, 회복장소, 식수<br>회복차량, 용기교체 등",
+      },
+      {
+        항목: "대응활동",
+        행동지표: "대기절차 운영",
+        배점: 3,
+        상: 3,
+        중: 2,
+        하: 1,
+        참고사항:
+          "대기1단계(1차 출동대), 직전대기 운영<br>대기2단계(추가소방력) -자원대기소 지정 및 운영",
+      },
+      {
+        항목: "대응활동",
+        행동지표: "전술상황판 기록",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "자원배치 관리, 화점, 구조대상자, 중요 위험요인,<br>전술우선순위 달성, 초진 및 완진",
+      },
 
-      //   {
-      //     항목: "핵심목표",
-      //     행동지표: "인명구조 목표달성의 적절성",
-      //     배점: 10,
-      //     상: 10,
-      //     중: 7,
-      //     하: 4,
-      //   },
-      //   {
-      //     항목: "핵심목표",
-      //     행동지표: "출동대 안전관리",
-      //     배점: 5,
-      //     상: 5,
-      //     중: 3,
-      //     하: 1,
-      //   },
-      // ];
+      {
+        항목: "진행상황 관리",
+        행동지표: "진행상황 파악",
+        배점: 10,
+        상: 10,
+        중: 7,
+        하: 4,
+        참고사항:
+          "구역별로 핵심목표 달성여부, 적절성 평가<br>전술우선순위 달성여부, 조정 및 대안마련",
+      },
+      {
+        항목: "진행상황 관리",
+        행동지표: "상황 미개선 및 악화시 대응조치",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "상황악화시 대응, 큰수관 변경, 인력투입, 특수차<br>장비보강, ※ 20분 경과에도 변화X",
+      },
+      {
+        항목: "진행상황 관리",
+        행동지표: "우선순위보고 조치",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항: "우선순위보고는 바로 조치해야 함",
+      },
+      {
+        항목: "진행상황 관리",
+        행동지표: "초진선언",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "초진보고를 받으면 (2차인명검색+배연+잔화정리)<br>전체 화재가 초진 시에 초진 선언(기록 + 상황실통보)",
+      },
+      {
+        항목: "진행상황 관리",
+        행동지표: "전술우선순위 관리",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "(공격전략) 인명검색.구조 → 외부연소확대 방지 → <br>내부연소확대 방지 → 초진(7면포위부서) → 2차 인명검색 → 완진",
+      },
+      {
+        항목: "진행상황 관리",
+        행동지표: "완진절차 준수",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "단위대 상황보고 → 현장지휘관 현장확인 → <br>상황판단회의 → 완진 선언(기록 및 상황실통보)",
+      },
 
-      // 위 evaluationData 데이터를 서식을 지켜서 한줄로 표시
-      const evaluationData = [
-        {
-          항목: "상황평가",
-          행동지표: "출동중 정보수집 및 임무공유",
-          배점: 3,
-          상: 3,
-          중: 2,
-          하: 1,
-          참고사항:
-            "상황실, 선착대장 무전을 통해 정보파악 및 상황판작성<br>상황을 추정하고 대응활동 구상 및 전파",
-        },
-        {
-          항목: "상황평가",
-          행동지표: "선착대장 활동지원",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "선착대장과 무전을 통해 현장상황 파악 및 활동지원<br>(후착대 배치, 임무조정, 특수차 부서 등등)",
-        },
-        {
-          항목: "상황평가",
-          행동지표: "지휘권 선언",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "상황평가(육안) → 브리핑 → 지휘 선언 → 상세상황평가<br>급박한 경우 도착 즉시 지휘선언 가능",
-        },
-        {
-          항목: "상황평가",
-          행동지표: "최초 상황평가",
-          배점: 10,
-          상: 10,
-          중: 7,
-          하: 4,
-          참고사항:
-            "ABCD, 둘러보는 상황평가(구조대상자+화재+연소확대 예측)<br>중요정보 및 활동파악(내부+외부), 추가소방력 요청<br>고정지휘(적정위치), 전략선택(공격전략), 핵심목표까지",
-        },
-        {
-          항목: "상황평가",
-          행동지표: "중요정보 파악",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항: "인명정보, 주요화재현장요소, 출동대 배치, 구조대상자 파악",
-        },
-        {
-          항목: "지휘 의사결정",
-          행동지표: "선착대 대응활동 유효성 판단",
-          배점: 3,
-          상: 3,
-          중: 2,
-          하: 1,
-          참고사항: "대응활동 적절성 판단, 필요시 전략,전술,임무변경",
-        },
-        {
-          항목: "지휘 의사결정",
-          행동지표: "현장 위험성 판단",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "발생가능한 위험요인 판단(건물, 위험물질, 최성기, 연소확대)",
-        },
-        {
-          항목: "지휘 의사결정",
-          행동지표: "핵심목표(대응 지침) 제시",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "상황평가와 위험성판단을 근거로 핵심목표 제시<br>(예, 2층 노래방의 인명구조에 집중할 것)상황변화시 변경가능",
-        },
-        {
-          항목: "지휘 의사결정",
-          행동지표: "1차 출동대 임무지시 및 조정",
-          배점: 10,
-          상: 10,
-          중: 7,
-          하: 4,
-          참고사항:
-            "임무대기 무전시 바로 중요사항에 우선적으로 배치<br>(전술우선순위 기반 구체적 임무지시)",
-        },
-        {
-          항목: "지휘 의사결정",
-          행동지표: "추가 자원 요청",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "최초 상황평가때 요청(특수차량 + 유관기관)<br>교대소방력을 고려한 충분한 자원 요청(필요시 대응단계)",
-        },
+      {
+        항목: "의사교환",
+        행동지표: "대응초기 무전통제",
+        배점: 3,
+        상: 3,
+        중: 2,
+        하: 1,
+        참고사항: "대응초기 무전폭주시 무선침묵 지시로 통제",
+      },
+      {
+        항목: "의사교환",
+        행동지표: "무전망 분리운영",
+        배점: 3,
+        상: 3,
+        중: 2,
+        하: 1,
+        참고사항:
+          "현장도착후 무전망 분리(지휘망, 지원망)<br>지휘관이 탄력적으로 운영.조정 가능",
+      },
+      {
+        항목: "의사교환",
+        행동지표: "무전교신 원칙 준수",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항: "복명복창(47), 적극적 듣기(지휘관을 부르면 바로 대답)",
+      },
+      {
+        항목: "의사교환",
+        행동지표: "무전교신 불능 시 조치",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "단위지휘관과 무전이 안될 때 소속 출동대장 호출<br>출동대장과 안될때는 소속직원을 호출, 인접대 호출",
+      },
+      {
+        항목: "의사교환",
+        행동지표: "효율적 의사교환",
+        배점: 10,
+        상: 10,
+        중: 7,
+        하: 4,
+        참고사항:
+          "지시보다는 듣기에 비중을 두고 무전운용<br>명확하고 정확한 의사전달이 되는지",
+      },
 
-        {
-          항목: "대응활동",
-          행동지표: "차량배치 조정",
-          배점: 10,
-          상: 10,
-          중: 7,
-          하: 4,
-          참고사항:
-            "대기1단계(회차가능), 대기2단계(자원대기소) 운영<br>특수차 공간확보, 1선펌프차, 중요물탱크 지정하는지",
-        },
-        {
-          항목: "대응활동",
-          행동지표: "소방활동구역 설정 및 통제",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항: "통제선 설치, 1통제선(소방). 2통제선(경찰)",
-        },
-        {
-          항목: "대응활동",
-          행동지표: "소방용수공급체계 구축",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "소화전, 1선펌프, 중요물탱크 급수체계 확보지시<br>인근에 소화전이 없는 경우 물탱크차 순환보수 전술",
-        },
-        {
-          항목: "대응활동",
-          행동지표: "(단계별)소방력 배치 및 조정",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "3단계 소방력 배치 모델 적용여부<br>상황변화에 따라 배치 조정",
-        },
-        {
-          항목: "대응활동",
-          행동지표: "현장분할 및 단위지휘관 운영",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "지리적(2층).기능적(임무) 분할 단위지휘관 운영<br>ABCD, (단위지휘관과 소속대 + 임무 통보)",
-        },
-        {
-          항목: "대응활동",
-          행동지표: "출동대 교대관리",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "교대조 운영(직전대기), 예비용기, 회복장소, 식수<br>회복차량, 용기교체 등",
-        },
-        {
-          항목: "대응활동",
-          행동지표: "대기절차 운영",
-          배점: 3,
-          상: 3,
-          중: 2,
-          하: 1,
-          참고사항:
-            "대기1단계(1차 출동대), 직전대기 운영<br>대기2단계(추가소방력) -자원대기소 지정 및 운영",
-        },
-        {
-          항목: "대응활동",
-          행동지표: "전술상황판 기록",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "자원배치 관리, 화점, 구조대상자, 중요 위험요인,<br>전술우선순위 달성, 초진 및 완진",
-        },
+      {
+        항목: "위기관리.리더십",
+        행동지표: "돌발 및 위기상황 대응",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "돌발이나 위기에 적합한 지시를 하는지<br>소방차량고장, 통신장애, 주민항의, 폭발, 대원고립 등",
+      },
+      {
+        항목: "위기관리.리더십",
+        행동지표: "스트레스 관리",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항: "침착유지, 의사결정 회피X, 부정적 감정 표출X",
+      },
+      {
+        항목: "위기관리.리더십",
+        행동지표: "리더로서의 능숙한 작전 운영",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항: "직관적인 적절한 의사결정, 전문성 발휘 여부",
+      },
+      {
+        항목: "위기관리.리더십",
+        행동지표: "인명구조 목표달성의 적절성",
+        배점: 10,
+        상: 10,
+        중: 7,
+        하: 4,
+        참고사항:
+          "인명구조 최우선 여부, 활동 적절성, 인명검색 절차<br>[우선탐색(발화점-발화층-직상층) + 교차탐색+정밀탐색]<br>구조대상자 발견시 이송 및 추가 인명검색의 연속성 유지",
+      },
+      {
+        항목: "위기관리.리더십",
+        행동지표: "출동대 안전관리의 적절성",
+        배점: 10,
+        상: 10,
+        중: 7,
+        하: 4,
+        참고사항:
+          "안전담당 지정, 단위지휘관을 통한 교대조 운영, 대원부상<br>신속동료구조팀 운영, 비상탈출로 확보, 위험사항 전파",
+      },
+      {
+        항목: "위기관리.리더십",
+        행동지표: "시민보호 및 피해최소화 작전의 적절성",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "대피자 유도 및 보호, 임시대피소, 일반시민 피해 우려 시 유관기관 요청 등",
+      },
+    ];
 
-        {
-          항목: "진행상황 관리",
-          행동지표: "진행상황 파악",
-          배점: 10,
-          상: 10,
-          중: 7,
-          하: 4,
-          참고사항:
-            "구역별로 핵심목표 달성여부, 적절성 평가<br>전술우선순위 달성여부, 조정 및 대안마련",
-        },
-        {
-          항목: "진행상황 관리",
-          행동지표: "상황 미개선 및 악화시 대응조치",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "상황악화시 대응, 큰수관 변경, 인력투입, 특수차<br>장비보강, ※ 20분 경과에도 변화X",
-        },
-        {
-          항목: "진행상황 관리",
-          행동지표: "우선순위보고 조치",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항: "우선순위보고는 바로 조치해야 함",
-        },
-        {
-          항목: "진행상황 관리",
-          행동지표: "초진선언",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "초진보고를 받으면 (2차인명검색+배연+잔화정리)<br>전체 화재가 초진 시에 초진 선언(기록 + 상황실통보)",
-        },
-        {
-          항목: "진행상황 관리",
-          행동지표: "전술우선순위 관리",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "(공격전략) 인명검색.구조 → 외부연소확대 방지 → <br>내부연소확대 방지 → 초진(7면포위부서) → 2차 인명검색 → 완진",
-        },
-        {
-          항목: "진행상황 관리",
-          행동지표: "완진절차 준수",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "단위대 상황보고 → 현장지휘관 현장확인 → <br>상황판단회의 → 완진 선언(기록 및 상황실통보)",
-        },
+    const tbody = document.querySelector("tbody");
+    const totalSpan = document.getElementById("total");
+    const headerTotalSpan = document.getElementById("headerTotal");
+    let totalScore = 0;
 
-        {
-          항목: "의사교환",
-          행동지표: "대응초기 무전통제",
-          배점: 3,
-          상: 3,
-          중: 2,
-          하: 1,
-          참고사항: "대응초기 무전폭주시 무선침묵 지시로 통제",
-        },
-        {
-          항목: "의사교환",
-          행동지표: "무전망 분리운영",
-          배점: 3,
-          상: 3,
-          중: 2,
-          하: 1,
-          참고사항:
-            "현장도착후 무전망 분리(지휘망, 지원망)<br>지휘관이 탄력적으로 운영.조정 가능",
-        },
-        {
-          항목: "의사교환",
-          행동지표: "무전교신 원칙 준수",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항: "복명복창(47), 적극적 듣기(지휘관을 부르면 바로 대답)",
-        },
-        {
-          항목: "의사교환",
-          행동지표: "무전교신 불능 시 조치",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "단위지휘관과 무전이 안될 때 소속 출동대장 호출<br>출동대장과 안될때는 소속직원을 호출, 인접대 호출",
-        },
-        {
-          항목: "의사교환",
-          행동지표: "효율적 의사교환",
-          배점: 10,
-          상: 10,
-          중: 7,
-          하: 4,
-          참고사항:
-            "지시보다는 듣기에 비중을 두고 무전운용<br>명확하고 정확한 의사전달이 되는지",
-        },
+    // localStorage 키 상수
+    const STORAGE_KEY = "evaluation_data_intermediate";
+    const TOTAL_SCORE_KEY = "total_score_intermediate";
 
-        {
-          항목: "위기관리.리더십",
-          행동지표: "돌발 및 위기상황 대응",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "돌발이나 위기에 적합한 지시를 하는지<br>소방차량고장, 통신장애, 주민항의, 폭발, 대원고립 등",
-        },
-        {
-          항목: "위기관리.리더십",
-          행동지표: "스트레스 관리",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항: "침착유지, 의사결정 회피X, 부정적 감정 표출X",
-        },
-        {
-          항목: "위기관리.리더십",
-          행동지표: "리더로서의 능숙한 작전 운영",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항: "직관적인 적절한 의사결정, 전문성 발휘 여부",
-        },
-        {
-          항목: "위기관리.리더십",
-          행동지표: "인명구조 목표달성의 적절성",
-          배점: 10,
-          상: 10,
-          중: 7,
-          하: 4,
-          참고사항:
-            "인명구조 최우선 여부, 활동 적절성, 인명검색 절차<br>[우선탐색(발화점-발화층-직상층) + 교차탐색+정밀탐색]<br>구조대상자 발견시 이송 및 추가 인명검색의 연속성 유지",
-        },
-        {
-          항목: "위기관리.리더십",
-          행동지표: "출동대 안전관리의 적절성",
-          배점: 10,
-          상: 10,
-          중: 7,
-          하: 4,
-          참고사항:
-            "안전담당 지정, 단위지휘관을 통한 교대조 운영, 대원부상<br>신속동료구조팀 운영, 비상탈출로 확보, 위험사항 전파",
-        },
-        {
-          항목: "위기관리.리더십",
-          행동지표: "시민보호 및 피해최소화 작전의 적절성",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "대피자 유도 및 보호, 임시대피소, 일반시민 피해 우려 시 유관기관 요청 등",
-        },
-      ];
+    // 저장된 데이터 불러오기
+    function loadSavedData() {
+      const savedData = localStorage.getItem(STORAGE_KEY);
+      const savedTotalScore = localStorage.getItem(TOTAL_SCORE_KEY);
 
-      const tbody = document.querySelector("tbody");
-      const totalSpan = document.getElementById("total");
-      const headerTotalSpan = document.getElementById("headerTotal");
-      let totalScore = 0;
+      if (savedData) {
+        const selectedCells = JSON.parse(savedData);
+        selectedCells.forEach((cellData) => {
+          const row = tbody.children[cellData.rowIndex];
+          const cell = row.children[cellData.cellIndex];
+          const actionCell = row.querySelector(".action-cell");
 
-      // localStorage 키 상수
-      const STORAGE_KEY = "evaluation_data_intermediate";
-      const TOTAL_SCORE_KEY = "total_score_intermediate";
-
-      // 저장된 데이터 불러오기
-      function loadSavedData() {
-        const savedData = localStorage.getItem(STORAGE_KEY);
-        const savedTotalScore = localStorage.getItem(TOTAL_SCORE_KEY);
-
-        if (savedData) {
-          const selectedCells = JSON.parse(savedData);
-          selectedCells.forEach((cellData) => {
-            const row = tbody.children[cellData.rowIndex];
-            const cell = row.children[cellData.cellIndex];
-            const actionCell = row.querySelector(".action-cell");
-
-            cell.classList.add("selected");
-            cell.textContent = cell.getAttribute("data-value");
-            actionCell.classList.add("action-highlight");
-          });
-        }
-
-        if (savedTotalScore) {
-          totalScore = parseInt(savedTotalScore);
-          totalSpan.textContent = totalScore;
-          headerTotalSpan.textContent = totalScore;
-        }
-      }
-
-      // 데이터 저장하기
-      function saveData() {
-        const selectedCells = [];
-        document.querySelectorAll(".selected").forEach((cell) => {
-          const row = cell.parentElement;
-          const rowIndex = Array.from(tbody.children).indexOf(row);
-          const cellIndex = Array.from(row.children).indexOf(cell);
-          selectedCells.push({ rowIndex, cellIndex });
+          cell.classList.add("selected");
+          cell.textContent = cell.getAttribute("data-value");
+          actionCell.classList.add("action-highlight");
         });
-
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedCells));
-        localStorage.setItem(TOTAL_SCORE_KEY, totalScore.toString());
       }
 
-      // Group rows by 항목 for rowspan logic
-      function groupRowsByColumn(data, column) {
-        const grouped = [];
-        let currentGroup = { key: null, rows: [] };
+      if (savedTotalScore) {
+        totalScore = parseInt(savedTotalScore);
+        totalSpan.textContent = totalScore;
+        headerTotalSpan.textContent = totalScore;
+      }
+    }
 
-        data.forEach((row) => {
-          if (row[column] === currentGroup.key) {
-            currentGroup.rows.push(row);
-          } else {
-            if (currentGroup.rows.length > 0) {
-              grouped.push(currentGroup);
-            }
-            currentGroup = { key: row[column], rows: [row] };
+    // 데이터 저장하기
+    function saveData() {
+      const selectedCells = [];
+      document.querySelectorAll(".selected").forEach((cell) => {
+        const row = cell.parentElement;
+        const rowIndex = Array.from(tbody.children).indexOf(row);
+        const cellIndex = Array.from(row.children).indexOf(cell);
+        selectedCells.push({ rowIndex, cellIndex });
+      });
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedCells));
+      localStorage.setItem(TOTAL_SCORE_KEY, totalScore.toString());
+    }
+
+    // Group rows by 항목 for rowspan logic
+    function groupRowsByColumn(data, column) {
+      const grouped = [];
+      let currentGroup = { key: null, rows: [] };
+
+      data.forEach((row) => {
+        if (row[column] === currentGroup.key) {
+          currentGroup.rows.push(row);
+        } else {
+          if (currentGroup.rows.length > 0) {
+            grouped.push(currentGroup);
           }
-        });
-
-        if (currentGroup.rows.length > 0) {
-          grouped.push(currentGroup);
+          currentGroup = { key: row[column], rows: [row] };
         }
+      });
 
-        return grouped;
+      if (currentGroup.rows.length > 0) {
+        grouped.push(currentGroup);
       }
 
-      // Populate table rows with merged cells for 평가항목
-      const groupedData = groupRowsByColumn(evaluationData, "항목");
+      return grouped;
+    }
 
-      groupedData.forEach((group) => {
-        const { key, rows } = group;
+    // Populate table rows with merged cells for 평가항목
+    const groupedData = groupRowsByColumn(evaluationData, "항목");
 
-        rows.forEach((data, index) => {
-          const row = document.createElement("tr");
+    groupedData.forEach((group) => {
+      const { key, rows } = group;
 
-          // Merge the first cell for 평가항목
-          if (index === 0) {
-            row.innerHTML = `
+      rows.forEach((data, index) => {
+        const row = document.createElement("tr");
+
+        // Merge the first cell for 평가항목
+        if (index === 0) {
+          row.innerHTML = `
               <td rowspan="${rows.length}">${key}</td>
               <td class="action-cell">${data.행동지표}</td>
               <td>${data.배점}</td>
@@ -883,8 +903,8 @@
               <td class="clickable" data-value="${data.하}" data-row="${index}"></td>
               <td>${data.참고사항}</td>
             `;
-          } else {
-            row.innerHTML = `
+        } else {
+          row.innerHTML = `
               <td class="action-cell">${data.행동지표}</td>
               <td>${data.배점}</td>
               <td class="clickable" data-value="${data.상}" data-row="${index}"></td>
@@ -892,142 +912,143 @@
               <td class="clickable" data-value="${data.하}" data-row="${index}"></td>
               <td>${data.참고사항}</td>
             `;
-          }
-
-          tbody.appendChild(row);
-        });
-      });
-
-      // Add click event listener to tbody
-      tbody.addEventListener("click", (event) => {
-        const cell = event.target;
-
-        if (cell.classList.contains("clickable")) {
-          const row = cell.parentElement; // 현재 셀이 속한 행
-          const actionCell = row.querySelector(".action-cell"); // 행동지표 셀
-          const rowCells = Array.from(row.children).filter((c) =>
-            c.classList.contains("clickable")
-          );
-
-          // Deselect other cells in the same row
-          rowCells.forEach((c) => {
-            if (c !== cell && c.classList.contains("selected")) {
-              totalScore -= parseInt(c.getAttribute("data-value"), 10);
-              c.classList.remove("selected");
-              c.textContent = ""; // 값 초기화
-            }
-          });
-
-          // Toggle selection
-          if (cell.classList.contains("selected")) {
-            totalScore -= parseInt(cell.getAttribute("data-value"), 10);
-            cell.classList.remove("selected");
-            cell.textContent = ""; // 값 초기화
-            actionCell.classList.remove("action-highlight"); // 행동지표 강조 제거
-          } else {
-            totalScore += parseInt(cell.getAttribute("data-value"), 10);
-            cell.classList.add("selected");
-            cell.textContent = cell.getAttribute("data-value"); // 선택된 값 표시
-            actionCell.classList.add("action-highlight"); // 행동지표 강조
-          }
-
-          // Update total score in both places
-          totalSpan.textContent = totalScore;
-          headerTotalSpan.textContent = totalScore;
-
-          // 데이터 저장
-          saveData();
         }
+
+        tbody.appendChild(row);
       });
+    });
 
-      // Reset functionality
-      const resetButton = document.getElementById("resetButton");
-      resetButton.addEventListener("click", () => {
-        // Reset all selected cells
-        document.querySelectorAll(".selected").forEach((cell) => {
+    // Add click event listener to tbody
+    tbody.addEventListener("click", (event) => {
+      const cell = event.target;
+
+      if (cell.classList.contains("clickable")) {
+        const row = cell.parentElement; // 현재 셀이 속한 행
+        const actionCell = row.querySelector(".action-cell"); // 행동지표 셀
+        const rowCells = Array.from(row.children).filter((c) =>
+          c.classList.contains("clickable")
+        );
+
+        // Deselect other cells in the same row
+        rowCells.forEach((c) => {
+          if (c !== cell && c.classList.contains("selected")) {
+            totalScore -= parseInt(c.getAttribute("data-value"), 10);
+            c.classList.remove("selected");
+            c.textContent = ""; // 값 초기화
+          }
+        });
+
+        // Toggle selection
+        if (cell.classList.contains("selected")) {
+          totalScore -= parseInt(cell.getAttribute("data-value"), 10);
           cell.classList.remove("selected");
-          cell.textContent = ""; // 셀의 값을 공란으로 초기화
-        });
+          cell.textContent = ""; // 값 초기화
+          actionCell.classList.remove("action-highlight"); // 행동지표 강조 제거
+        } else {
+          totalScore += parseInt(cell.getAttribute("data-value"), 10);
+          cell.classList.add("selected");
+          cell.textContent = cell.getAttribute("data-value"); // 선택된 값 표시
+          actionCell.classList.add("action-highlight"); // 행동지표 강조
+        }
 
-        // Reset all highlighted 행동지표 cells
-        document.querySelectorAll(".action-highlight").forEach((cell) => {
-          cell.classList.remove("action-highlight");
-        });
-
-        // Reset total score in both places
-        totalScore = 0;
+        // Update total score in both places
         totalSpan.textContent = totalScore;
         headerTotalSpan.textContent = totalScore;
 
-        // localStorage 데이터 삭제
-        localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem(TOTAL_SCORE_KEY);
+        // 데이터 저장
+        saveData();
+      }
+    });
+
+    // Reset functionality
+    const resetButton = document.getElementById("resetButton");
+    resetButton.addEventListener("click", () => {
+      // Reset all selected cells
+      document.querySelectorAll(".selected").forEach((cell) => {
+        cell.classList.remove("selected");
+        cell.textContent = ""; // 셀의 값을 공란으로 초기화
       });
 
-      // 참고사항 버튼 클릭 이벤트 수정
-      document.getElementById("refButton").addEventListener("click", () => {
-        const icon = document.querySelector("#refButton i");
-        const button = document.getElementById("refButton");
-
-        // 아이콘과 툴팁 토글
-        if (icon.classList.contains("fa-eye")) {
-          icon.classList.replace("fa-eye", "fa-eye-slash");
-          button.title = "참고사항 보기";
-        } else {
-          icon.classList.replace("fa-eye-slash", "fa-eye");
-          button.title = "참고사항 숨기기";
-        }
-
-        // 참고사항 열 토글
-        document
-          .querySelectorAll("thead th:last-child, tbody td:last-child")
-          .forEach((cell) => {
-            cell.classList.toggle("hide");
-          });
+      // Reset all highlighted 행동지표 cells
+      document.querySelectorAll(".action-highlight").forEach((cell) => {
+        cell.classList.remove("action-highlight");
       });
 
-      document.querySelectorAll("tbody tr").forEach((row) => {
-        // 각 행의 모든 열을 확인
-        const cells = row.querySelectorAll("td");
-        cells.forEach((cell, index) => {
-          // 배점 열의 값을 확인
-          if (parseInt(cell.textContent, 10) === 10) {
-            cell.classList.add("orange-bg"); // 배점 셀에 주황색 클래스 추가
+      // Reset total score in both places
+      totalScore = 0;
+      totalSpan.textContent = totalScore;
+      headerTotalSpan.textContent = totalScore;
 
-            // 왼쪽 셀 처리
-            const previousCell = cell.previousElementSibling;
-            if (previousCell) {
-              previousCell.classList.add("orange-bg"); // 왼쪽 셀에 주황색 클래스 추가
-            }
+      // localStorage 데이터 삭제
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(TOTAL_SCORE_KEY);
+    });
 
-            // 오른쪽 셀 처리
-            // const nextCell = cell.nextElementSibling;
-            // if (nextCell) {
-            //   nextCell.classList.add("orange-bg"); // 오른쪽 셀에 주황색 클래스 추가
-            // }
-          }
+    // 참고사항 버튼 클릭 이벤트 수정
+    document.getElementById("refButton").addEventListener("click", () => {
+      const icon = document.querySelector("#refButton i");
+      const button = document.getElementById("refButton");
+
+      // 아이콘과 툴팁 토글
+      if (icon.classList.contains("fa-eye")) {
+        icon.classList.replace("fa-eye", "fa-eye-slash");
+        button.title = "참고사항 보기";
+      } else {
+        icon.classList.replace("fa-eye-slash", "fa-eye");
+        button.title = "참고사항 숨기기";
+      }
+
+      // 참고사항 열 토글
+      document
+        .querySelectorAll("thead th:last-child, tbody td:last-child")
+        .forEach((cell) => {
+          cell.classList.toggle("hide");
         });
-      });
+    });
 
-      // 햄버거 메뉴 기능
-      const hamburger = document.querySelector(".hamburger-menu");
-      const sidebar = document.querySelector(".sidebar");
+    document.querySelectorAll("tbody tr").forEach((row) => {
+      // 각 행의 모든 열을 확인
+      const cells = row.querySelectorAll("td");
+      cells.forEach((cell, index) => {
+        // 배점 열의 값을 확인
+        if (parseInt(cell.textContent, 10) === 10) {
+          cell.classList.add("orange-bg"); // 배점 셀에 주황색 클래스 추가
 
-      hamburger.addEventListener("click", () => {
-        hamburger.classList.toggle("active");
-        sidebar.classList.toggle("active");
-      });
+          // 왼쪽 셀 처리
+          const previousCell = cell.previousElementSibling;
+          if (previousCell) {
+            previousCell.classList.add("orange-bg"); // 왼쪽 셀에 주황색 클래스 추가
+          }
 
-      // 사이드바 외부 클릭 시 닫기
-      document.addEventListener("click", (e) => {
-        if (!hamburger.contains(e.target) && !sidebar.contains(e.target)) {
-          hamburger.classList.remove("active");
-          sidebar.classList.remove("active");
+          // 오른쪽 셀 처리
+          // const nextCell = cell.nextElementSibling;
+          // if (nextCell) {
+          //   nextCell.classList.add("orange-bg"); // 오른쪽 셀에 주황색 클래스 추가
+          // }
         }
       });
+    });
 
-      // 페이지 로드 시 저장된 데이터 불러오기
-      document.addEventListener("DOMContentLoaded", loadSavedData);
-    </script>
-  </body>
+    // 햄버거 메뉴 기능
+    const hamburger = document.querySelector(".hamburger-menu");
+    const sidebar = document.querySelector(".sidebar");
+
+    hamburger.addEventListener("click", () => {
+      hamburger.classList.toggle("active");
+      sidebar.classList.toggle("active");
+    });
+
+    // 사이드바 외부 클릭 시 닫기
+    document.addEventListener("click", (e) => {
+      if (!hamburger.contains(e.target) && !sidebar.contains(e.target)) {
+        hamburger.classList.remove("active");
+        sidebar.classList.remove("active");
+      }
+    });
+
+    // 페이지 로드 시 저장된 데이터 불러오기
+    document.addEventListener("DOMContentLoaded", loadSavedData);
+  </script>
+</body>
+
 </html>

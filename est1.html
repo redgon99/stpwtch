@@ -1,587 +1,609 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>초급현장지휘관 실기평가표</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 20px;
-        padding-top: 60px; /* 고정 헤더를 위한 상단 여백 추가 */
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 20px;
-        margin-top: 20px;
-      }
-      th,
-      td {
-        border: 1px solid black;
-        padding: 8px;
-        text-align: center;
-      }
-      th {
-        background-color: #f2f2f2;
-      }
-      td.clickable {
-        cursor: pointer;
-      }
-      td.selected {
-        background-color: #c3c3c3; /* 셀 선택 시 배경 */
-      }
-      td.action-highlight {
-        background-color: #e6e6e6; /* 행동지표 셀 강조 */
-      }
-      .highlight {
-        background-color: yellow;
-        font-weight: bold;
-      }
-      #resetButton {
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        padding: 10px 20px;
-        font-size: 1rem;
-        cursor: pointer;
-        border: none;
-        border-radius: 5px;
-        background-color: #61dafb;
-        color: #282c34;
-        z-index: 901;
-      }
-      #refButton {
-        position: fixed;
-        top: 10px;
-        right: 80px;
-        padding: 10px 20px;
-        font-size: 1rem;
-        cursor: pointer;
-        border: none;
-        border-radius: 5px;
-        background-color: #7af880;
-        color: #282c34;
-        z-index: 901;
-      }
 
-      #resetButton:hover {
-        background-color: #ffe7d9;
-      }
-      td.orange-bg {
-        background-color: #ffe7d9; /* 배점 10점 셀의 배경색 */
-      }
-      h1 {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        background-color: white;
-        margin: 0;
-        padding: 15px;
-        text-align: center;
-        z-index: 900;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      }
-      .hide {
-        display: none;
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>초급현장지휘관 실기평가표</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      padding-top: 60px;
+      /* 고정 헤더를 위한 상단 여백 추가 */
+    }
 
-      /* Footer Styles */
-      footer {
-        background-color: #f8f9fa;
-        padding: 20px 0;
-        margin-top: 40px;
-        border-top: 1px solid #ddd;
-      }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      margin-top: 20px;
+    }
 
-      .footer-content {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 20px;
-        text-align: center;
-      }
+    th,
+    td {
+      border: 1px solid black;
+      padding: 8px;
+      text-align: center;
+    }
 
-      .footer-info p {
-        margin: 5px 0;
-        color: #666;
-        font-size: 0.9rem;
-      }
+    th {
+      background-color: #f2f2f2;
+    }
 
-      .footer-bottom {
-        margin-top: 20px;
-        text-align: center;
-        color: #888;
-        font-size: 0.8rem;
-      }
+    td.clickable {
+      cursor: pointer;
+    }
 
-      /* 햄버거 메뉴 스타일 수정 */
-      .hamburger-menu {
-        position: fixed;
-        top: 20px;
-        left: 20px;
-        cursor: pointer;
-        z-index: 901;
-        width: 30px;
-        height: 30px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background-color: #f8f9fa;
-        border-radius: 5px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      }
+    td.selected {
+      background-color: #c3c3c3;
+      /* 셀 선택 시 배경 */
+    }
 
-      /* 햄버거 메뉴 라인 스타일 수정 */
-      .hamburger-menu div {
-        width: 20px;
-        height: 2px;
-        background-color: #333;
-        position: absolute;
-        transition: 0.3s;
-      }
+    td.action-highlight {
+      background-color: #e6e6e6;
+      /* 행동지표 셀 강조 */
+    }
 
-      .line1 {
-        transform: translateY(-6px);
-      }
-      .line2 {
-        opacity: 1;
-      }
-      .line3 {
-        transform: translateY(6px);
-      }
+    .highlight {
+      background-color: yellow;
+      font-weight: bold;
+    }
 
-      /* 활성화 상태 스타일 수정 */
-      .hamburger-menu.active .line1 {
-        transform: rotate(45deg);
-      }
+    #resetButton {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      padding: 10px 20px;
+      font-size: 1rem;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      background-color: #61dafb;
+      color: #282c34;
+      z-index: 901;
+    }
 
-      .hamburger-menu.active .line2 {
-        opacity: 0;
-      }
+    #refButton {
+      position: fixed;
+      top: 10px;
+      right: 80px;
+      padding: 10px 20px;
+      font-size: 1rem;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      background-color: #7af880;
+      color: #282c34;
+      z-index: 901;
+    }
 
-      .hamburger-menu.active .line3 {
-        transform: rotate(-45deg);
-      }
+    #resetButton:hover {
+      background-color: #ffe7d9;
+    }
 
-      /* 사이드바 스타일 수정 */
-      .sidebar {
-        display: none;
-        position: fixed;
-        left: -250px;
-        top: 0;
-        width: 250px;
-        height: 100%;
-        background-color: #f8f9fa;
-        transition: 0.3s;
-        padding: 60px 20px 20px;
-        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-        z-index: 999;
-      }
+    td.orange-bg {
+      background-color: #ffe7d9;
+      /* 배점 10점 셀의 배경색 */
+    }
 
-      .sidebar.active {
-        display: block;
-        left: 0;
-      }
+    h1 {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background-color: white;
+      margin: 0;
+      padding: 15px;
+      text-align: center;
+      z-index: 900;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
 
-      /* 사이드바 메뉴 항목 스타일 */
-      .sidebar ul {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-      }
+    .hide {
+      display: none;
+    }
 
-      .sidebar ul li {
-        padding: 15px 0;
-        border-bottom: 1px solid #ddd;
-      }
+    /* Footer Styles */
+    footer {
+      background-color: #f8f9fa;
+      padding: 20px 0;
+      margin-top: 40px;
+      border-top: 1px solid #ddd;
+    }
 
-      .sidebar ul li:last-child {
-        border-bottom: none;
-      }
+    .footer-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+      text-align: center;
+    }
 
-      .sidebar ul li a {
-        color: #333;
-        text-decoration: none;
-        font-size: 1rem;
-        display: block;
-        transition: 0.3s;
-      }
+    .footer-info p {
+      margin: 5px 0;
+      color: #666;
+      font-size: 0.9rem;
+    }
 
-      .sidebar ul li a:hover {
-        color: #007bff;
-        padding-left: 10px;
-      }
+    .footer-bottom {
+      margin-top: 20px;
+      text-align: center;
+      color: #888;
+      font-size: 0.8rem;
+    }
 
-      /* QR 코드 버튼 스타일 */
-      /* #qrButton {
+    /* 햄버거 메뉴 스타일 수정 */
+    .hamburger-menu {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      cursor: pointer;
+      z-index: 901;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #f8f9fa;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    /* 햄버거 메뉴 라인 스타일 수정 */
+    .hamburger-menu div {
+      width: 20px;
+      height: 2px;
+      background-color: #333;
+      position: absolute;
+      transition: 0.3s;
+    }
+
+    .line1 {
+      transform: translateY(-6px);
+    }
+
+    .line2 {
+      opacity: 1;
+    }
+
+    .line3 {
+      transform: translateY(6px);
+    }
+
+    /* 활성화 상태 스타일 수정 */
+    .hamburger-menu.active .line1 {
+      transform: rotate(45deg);
+    }
+
+    .hamburger-menu.active .line2 {
+      opacity: 0;
+    }
+
+    .hamburger-menu.active .line3 {
+      transform: rotate(-45deg);
+    }
+
+    /* 사이드바 스타일 수정 */
+    .sidebar {
+      display: none;
+      position: fixed;
+      left: -250px;
+      top: 0;
+      width: 250px;
+      height: 100%;
+      background-color: #f8f9fa;
+      transition: 0.3s;
+      padding: 60px 20px 20px;
+      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+      z-index: 999;
+    }
+
+    .sidebar.active {
+      display: block;
+      left: 0;
+    }
+
+    /* 사이드바 메뉴 항목 스타일 */
+    .sidebar ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .sidebar ul li {
+      padding: 15px 0;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .sidebar ul li:last-child {
+      border-bottom: none;
+    }
+
+    .sidebar ul li a {
+      color: #333;
+      text-decoration: none;
+      font-size: 1rem;
+      display: block;
+      transition: 0.3s;
+    }
+
+    .sidebar ul li a:hover {
+      color: #007bff;
+      padding-left: 10px;
+    }
+
+    /* QR 코드 버튼 스타일 */
+    /* #qrButton {
         position: fixed;
         top: 10px;
         right: 150px; /* refButton의 왼쪽에 위치 */
-        padding: 10px 20px;
-        font-size: 1rem;
-        cursor: pointer;
-        border: none;
-        border-radius: 5px;
-        background-color: #f8f9fa;
-        color: #282c34;
-        z-index: 901;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      }
+    padding: 10px 20px;
+    font-size: 1rem;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    background-color: #f8f9fa;
+    color: #282c34;
+    z-index: 901;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
 
-      #qrButton:hover {
-        background-color: #e9ecef;
-      } */
-    </style>
-    <!-- Font Awesome CDN 추가 -->
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
-    />
-  </head>
-  <body>
-    <h1>
-      초급 실기평가표
-      <span>(총점: <span id="headerTotal">0</span>점)</span>
-    </h1>
-    <button id="resetButton" title="초기화">
-      <i class="fas fa-redo"></i>
-    </button>
-    <button id="refButton" title="참고사항 숨기기">
-      <i class="fas fa-eye"></i>
-    </button>
-    <div class="hamburger-menu">
-      <div class="line1"></div>
-      <div class="line2"></div>
-      <div class="line3"></div>
-    </div>
-    <div class="sidebar">
-      <ul>
-        <li>
-          <a href="index.html">스탑워치&응시번호</a>
-        </li>
-        <li>
-          <a href="est1.html">초급평가표</a>
-        </li>
-        <li>
-          <a href="est2.html">중급평가표</a>
-        </li>
-      </ul>
-    </div>
-    <table id="evaluationTable">
-      <thead>
-        <tr>
-          <th>평가항목</th>
-          <th>행동지표</th>
-          <th>배점</th>
-          <th>상</th>
-          <th>중</th>
-          <th>하</th>
-          <th>참고사항</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Table rows dynamically populated -->
-      </tbody>
-      <tfoot>
-        <tr>
-          <td colspan="7">
-            총합: <span id="total" class="highlight">0</span> 점
-          </td>
-        </tr>
-      </tfoot>
-    </table>
+    #qrButton:hover {
+      background-color: #e9ecef;
+    }
 
-    <script>
-      // Evaluation Data
-      const evaluationData = [
-        {
-          항목: "상황평가",
-          행동지표: "출동중 정보수집 및 임무공유",
-          배점: 3,
-          상: 3,
-          중: 2,
-          하: 1,
-          참고사항:
-            "• 취득정보 요약 전파 상황예측 <br>• 개괄적인 사전임무 부여",
-        },
-        {
-          항목: "상황평가",
-          행동지표: "출동중 상황전파",
-          배점: 3,
-          상: 3,
-          중: 2,
-          하: 1,
-          참고사항:
-            "• 교통상황, 연기.불꽃 관측사항 전파<br>• 돌발상황(교통사고, 공사중 진입불가) 전파",
-        },
-        {
-          항목: "상황평가",
-          행동지표: "최초 상황보고, 지휘형태 결정 및 지휘권 선언",
-          배점: 10,
-          상: 10,
-          중: 7,
-          하: 4,
-          참고사항:
-            "• 지휘선언(고정,전진), ABCD면 지정<br>• 연소확대+구조대상자+위험요소+활동예정+추가 소방력 등이 정보가 포함된 최초상황보고",
-        },
-        {
-          항목: "상황평가",
-          행동지표: "인명정보 취득 및 전파",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항: "육안관측 및 적극적 관계인 정보 취득 노력",
-        },
-        {
-          항목: "상황평가",
-          행동지표: "추가 소방력 판단",
-          배점: 3,
-          상: 3,
-          중: 2,
-          하: 1,
-          참고사항: "상황을 예측하고 충분한 소방력 요창",
-        },
+    */
+  </style>
+  <!-- Font Awesome CDN 추가 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+</head>
 
-        {
-          항목: "대응활동",
-          행동지표: "차량배치",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "• 대기1,2단계 운영, 특수차 공간확보, <회차가능><br>• 1선펌프, 중요물탱크 지정하는지",
-        },
-        {
-          항목: "대응활동",
-          행동지표: "표준대응활동",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "• 전략결정(공격,방어) → 1차 출동대 지시 → 예측  → 후착대 임무부여 ★상황변화 대처능력<br>• 선착대에 구체적 임무지시(수관, 장비, 파괴기구)",
-        },
-        {
-          항목: "대응활동",
-          행동지표: "후착대 임무부여",
-          배점: 3,
-          상: 3,
-          중: 2,
-          하: 1,
-          참고사항:
-            "• RECEO를 고려한 구체적 임무 지시<br>• 임무대기 무전 이후 바로 임무부여 여부",
-        },
-        {
-          항목: "대응활동",
-          행동지표: "위기대응 및 진행상황 관리",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "• 복잡상황(딜레마포함), 폭발 등에서 의사결정<br>• 능숙한 대응활동 진행, 위기상황 전파<br>• 초진 → 2차 인명검색, 배연, 잔화정리",
-        },
-        {
-          항목: "대응활동",
-          행동지표: "화재현장요소 파악 관리",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "• 화재읽기(연기흐름 등) → 진행예측 <br>• 건물구조, 열기, 바람, 배연, 위험물 등 요소 관리",
-        },
-        {
-          항목: "대응활동",
-          행동지표: "단위지휘관 임무수행",
-          배점: 3,
-          상: 3,
-          중: 2,
-          하: 1,
-          참고사항:
-            "• 단위지휘관 지정 및 운영 여부 <br>• 임무별, 구역별, 방면별, 층별 등 다양하게 지정",
-        },
+<body>
+  <h1>
+    초급 실기평가표
+    <span>(총점: <span id="headerTotal">0</span>점)</span>
+  </h1>
+  <button id="resetButton" title="초기화">
+    <i class="fas fa-redo"></i>
+  </button>
+  <button id="refButton" title="참고사항 숨기기">
+    <i class="fas fa-eye"></i>
+  </button>
+  <div class="hamburger-menu">
+    <div class="line1"></div>
+    <div class="line2"></div>
+    <div class="line3"></div>
+  </div>
+  <div class="sidebar">
+    <ul>
+      <li>
+        <a href="index.html">스탑워치&응시번호</a>
+      </li>
+      <li>
+        <a href="est1.html">초급평가표</a>
+      </li>
+      <li>
+        <a href="est2.html">중급평가표</a>
+      </li>
+      <li>
+        <a href="est3.html">고급평가표</a>
+      </li>
+    </ul>
+  </div>
+  <table id="evaluationTable">
+    <thead>
+      <tr>
+        <th>평가항목</th>
+        <th>행동지표</th>
+        <th>배점</th>
+        <th>상</th>
+        <th>중</th>
+        <th>하</th>
+        <th>참고사항</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Table rows dynamically populated -->
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="7">
+          총합: <span id="total" class="highlight">0</span> 점
+        </td>
+      </tr>
+    </tfoot>
+  </table>
 
-        {
-          항목: "화재전술",
-          행동지표: "소방용수",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "• 소화전, 1선펌프, 중요물탱크 – 급수체계 확보지시 <br>• 분당 소모량(소화전은 분당 600 ~ 1000L 보수)<br>(40mm 300L / 65mm 600L / 방수포 1800L)",
-        },
-        {
-          항목: "화재전술",
-          행동지표: "문개방 및 내부진입",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "• 파괴기구, 사다리이용 진입, 도어엔트리 절차<br>• 환기지배형 화재(구획실)",
-        },
-        {
-          항목: "화재전술",
-          행동지표: "수관전개 주수 및 관창배치",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "• 내부진입: 화점-인근실-화재층-직상층-상층-하층<br>• 수관전개: 거리 + 층당 반본 + 예비수관",
-        },
-        {
-          항목: "화재전술",
-          행동지표: "배연",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "• 인명구조를 위한 배연, 시야확보<br>• 구획실 화재에서 배연 주의",
-        },
-        {
-          항목: "의사교환",
-          행동지표: "무전교신 원칙",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "• 복명복창(특히 중요사항은 재확인)<br>• 적극적 듣기 (지휘관을 부르면 바로 대답)",
-        },
-        {
-          항목: "의사교환",
-          행동지표: "정보 전달력",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항: "• 정확한 의사전달력이 있는지 (요약을 잘 하는지)",
-        },
-        {
-          항목: "의사교환",
-          행동지표: "지휘팀장 도착 후 상황보고",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항: "• 현상황 + 인명구조 + 출동대 활동상황 보고",
-        },
+  <script>
+    // Evaluation Data
+    const evaluationData = [
+      {
+        항목: "상황평가",
+        행동지표: "출동중 정보수집 및 임무공유",
+        배점: 3,
+        상: 3,
+        중: 2,
+        하: 1,
+        참고사항:
+          "• 취득정보 요약 전파 상황예측 <br>• 개괄적인 사전임무 부여",
+      },
+      {
+        항목: "상황평가",
+        행동지표: "출동중 상황전파",
+        배점: 3,
+        상: 3,
+        중: 2,
+        하: 1,
+        참고사항:
+          "• 교통상황, 연기.불꽃 관측사항 전파<br>• 돌발상황(교통사고, 공사중 진입불가) 전파",
+      },
+      {
+        항목: "상황평가",
+        행동지표: "최초 상황보고, 지휘형태 결정 및 지휘권 선언",
+        배점: 10,
+        상: 10,
+        중: 7,
+        하: 4,
+        참고사항:
+          "• 지휘선언(고정,전진), ABCD면 지정<br>• 연소확대+구조대상자+위험요소+활동예정+추가 소방력 등이 정보가 포함된 최초상황보고",
+      },
+      {
+        항목: "상황평가",
+        행동지표: "인명정보 취득 및 전파",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항: "육안관측 및 적극적 관계인 정보 취득 노력",
+      },
+      {
+        항목: "상황평가",
+        행동지표: "추가 소방력 판단",
+        배점: 3,
+        상: 3,
+        중: 2,
+        하: 1,
+        참고사항: "상황을 예측하고 충분한 소방력 요창",
+      },
 
-        {
-          항목: "핵심목표",
-          행동지표: "인명구조 목표달성의 적절성",
-          배점: 10,
-          상: 10,
-          중: 7,
-          하: 4,
-          참고사항:
-            "• 인명구조 최우선 여부, 활동 적절성, 인명검색 절차<br>인명구조 관련 정보 지휘팀장에게 보고 여부",
-        },
-        {
-          항목: "핵심목표",
-          행동지표: "출동대 안전관리",
-          배점: 5,
-          상: 5,
-          중: 3,
-          하: 1,
-          참고사항:
-            "• 위험요인 예측 및 전파, 용기잔량, 교대관리<br>• 대원사고 발생시 조치 등<br>• 신속동료구조팀 운영 여부, 비상탈출로 확보",
-        },
-      ];
+      {
+        항목: "대응활동",
+        행동지표: "차량배치",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "• 대기1,2단계 운영, 특수차 공간확보, <회차가능><br>• 1선펌프, 중요물탱크 지정하는지",
+      },
+      {
+        항목: "대응활동",
+        행동지표: "표준대응활동",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "• 전략결정(공격,방어) → 1차 출동대 지시 → 예측  → 후착대 임무부여 ★상황변화 대처능력<br>• 선착대에 구체적 임무지시(수관, 장비, 파괴기구)",
+      },
+      {
+        항목: "대응활동",
+        행동지표: "후착대 임무부여",
+        배점: 3,
+        상: 3,
+        중: 2,
+        하: 1,
+        참고사항:
+          "• RECEO를 고려한 구체적 임무 지시<br>• 임무대기 무전 이후 바로 임무부여 여부",
+      },
+      {
+        항목: "대응활동",
+        행동지표: "위기대응 및 진행상황 관리",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "• 복잡상황(딜레마포함), 폭발 등에서 의사결정<br>• 능숙한 대응활동 진행, 위기상황 전파<br>• 초진 → 2차 인명검색, 배연, 잔화정리",
+      },
+      {
+        항목: "대응활동",
+        행동지표: "화재현장요소 파악 관리",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "• 화재읽기(연기흐름 등) → 진행예측 <br>• 건물구조, 열기, 바람, 배연, 위험물 등 요소 관리",
+      },
+      {
+        항목: "대응활동",
+        행동지표: "단위지휘관 임무수행",
+        배점: 3,
+        상: 3,
+        중: 2,
+        하: 1,
+        참고사항:
+          "• 단위지휘관 지정 및 운영 여부 <br>• 임무별, 구역별, 방면별, 층별 등 다양하게 지정",
+      },
 
-      const tbody = document.querySelector("tbody");
-      const totalSpan = document.getElementById("total");
-      const headerTotalSpan = document.getElementById("headerTotal"); // 헤더 총점 요소 추가
-      let totalScore = 0;
+      {
+        항목: "화재전술",
+        행동지표: "소방용수",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "• 소화전, 1선펌프, 중요물탱크 – 급수체계 확보지시 <br>• 분당 소모량(소화전은 분당 600 ~ 1000L 보수)<br>(40mm 300L / 65mm 600L / 방수포 1800L)",
+      },
+      {
+        항목: "화재전술",
+        행동지표: "문개방 및 내부진입",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "• 파괴기구, 사다리이용 진입, 도어엔트리 절차<br>• 환기지배형 화재(구획실)",
+      },
+      {
+        항목: "화재전술",
+        행동지표: "수관전개 주수 및 관창배치",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "• 내부진입: 화점-인근실-화재층-직상층-상층-하층<br>• 수관전개: 거리 + 층당 반본 + 예비수관",
+      },
+      {
+        항목: "화재전술",
+        행동지표: "배연",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "• 인명구조를 위한 배연, 시야확보<br>• 구획실 화재에서 배연 주의",
+      },
+      {
+        항목: "의사교환",
+        행동지표: "무전교신 원칙",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "• 복명복창(특히 중요사항은 재확인)<br>• 적극적 듣기 (지휘관을 부르면 바로 대답)",
+      },
+      {
+        항목: "의사교환",
+        행동지표: "정보 전달력",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항: "• 정확한 의사전달력이 있는지 (요약을 잘 하는지)",
+      },
+      {
+        항목: "의사교환",
+        행동지표: "지휘팀장 도착 후 상황보고",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항: "• 현상황 + 인명구조 + 출동대 활동상황 보고",
+      },
 
-      // localStorage 키 상수
-      const STORAGE_KEY = "evaluation_data";
-      const TOTAL_SCORE_KEY = "total_score";
+      {
+        항목: "핵심목표",
+        행동지표: "인명구조 목표달성의 적절성",
+        배점: 10,
+        상: 10,
+        중: 7,
+        하: 4,
+        참고사항:
+          "• 인명구조 최우선 여부, 활동 적절성, 인명검색 절차<br>인명구조 관련 정보 지휘팀장에게 보고 여부",
+      },
+      {
+        항목: "핵심목표",
+        행동지표: "출동대 안전관리",
+        배점: 5,
+        상: 5,
+        중: 3,
+        하: 1,
+        참고사항:
+          "• 위험요인 예측 및 전파, 용기잔량, 교대관리<br>• 대원사고 발생시 조치 등<br>• 신속동료구조팀 운영 여부, 비상탈출로 확보",
+      },
+    ];
 
-      // 저장된 데이터 불러오기
-      function loadSavedData() {
-        const savedData = localStorage.getItem(STORAGE_KEY);
-        const savedTotalScore = localStorage.getItem(TOTAL_SCORE_KEY);
+    const tbody = document.querySelector("tbody");
+    const totalSpan = document.getElementById("total");
+    const headerTotalSpan = document.getElementById("headerTotal"); // 헤더 총점 요소 추가
+    let totalScore = 0;
 
-        if (savedData) {
-          const selectedCells = JSON.parse(savedData);
-          selectedCells.forEach((cellData) => {
-            const row = tbody.children[cellData.rowIndex];
-            const cell = row.children[cellData.cellIndex];
-            const actionCell = row.querySelector(".action-cell");
+    // localStorage 키 상수
+    const STORAGE_KEY = "evaluation_data";
+    const TOTAL_SCORE_KEY = "total_score";
 
-            cell.classList.add("selected");
-            cell.textContent = cell.getAttribute("data-value");
-            actionCell.classList.add("action-highlight");
-          });
-        }
+    // 저장된 데이터 불러오기
+    function loadSavedData() {
+      const savedData = localStorage.getItem(STORAGE_KEY);
+      const savedTotalScore = localStorage.getItem(TOTAL_SCORE_KEY);
 
-        if (savedTotalScore) {
-          totalScore = parseInt(savedTotalScore);
-          totalSpan.textContent = totalScore;
-          headerTotalSpan.textContent = totalScore;
-        }
-      }
+      if (savedData) {
+        const selectedCells = JSON.parse(savedData);
+        selectedCells.forEach((cellData) => {
+          const row = tbody.children[cellData.rowIndex];
+          const cell = row.children[cellData.cellIndex];
+          const actionCell = row.querySelector(".action-cell");
 
-      // 데이터 저장하기
-      function saveData() {
-        const selectedCells = [];
-        document.querySelectorAll(".selected").forEach((cell) => {
-          const row = cell.parentElement;
-          const rowIndex = Array.from(tbody.children).indexOf(row);
-          const cellIndex = Array.from(row.children).indexOf(cell);
-          selectedCells.push({ rowIndex, cellIndex });
+          cell.classList.add("selected");
+          cell.textContent = cell.getAttribute("data-value");
+          actionCell.classList.add("action-highlight");
         });
-
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedCells));
-        localStorage.setItem(TOTAL_SCORE_KEY, totalScore.toString());
       }
 
-      // Group rows by 항목 for rowspan logic
-      function groupRowsByColumn(data, column) {
-        const grouped = [];
-        let currentGroup = { key: null, rows: [] };
+      if (savedTotalScore) {
+        totalScore = parseInt(savedTotalScore);
+        totalSpan.textContent = totalScore;
+        headerTotalSpan.textContent = totalScore;
+      }
+    }
 
-        data.forEach((row) => {
-          if (row[column] === currentGroup.key) {
-            currentGroup.rows.push(row);
-          } else {
-            if (currentGroup.rows.length > 0) {
-              grouped.push(currentGroup);
-            }
-            currentGroup = { key: row[column], rows: [row] };
+    // 데이터 저장하기
+    function saveData() {
+      const selectedCells = [];
+      document.querySelectorAll(".selected").forEach((cell) => {
+        const row = cell.parentElement;
+        const rowIndex = Array.from(tbody.children).indexOf(row);
+        const cellIndex = Array.from(row.children).indexOf(cell);
+        selectedCells.push({ rowIndex, cellIndex });
+      });
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedCells));
+      localStorage.setItem(TOTAL_SCORE_KEY, totalScore.toString());
+    }
+
+    // Group rows by 항목 for rowspan logic
+    function groupRowsByColumn(data, column) {
+      const grouped = [];
+      let currentGroup = { key: null, rows: [] };
+
+      data.forEach((row) => {
+        if (row[column] === currentGroup.key) {
+          currentGroup.rows.push(row);
+        } else {
+          if (currentGroup.rows.length > 0) {
+            grouped.push(currentGroup);
           }
-        });
-
-        if (currentGroup.rows.length > 0) {
-          grouped.push(currentGroup);
+          currentGroup = { key: row[column], rows: [row] };
         }
+      });
 
-        return grouped;
+      if (currentGroup.rows.length > 0) {
+        grouped.push(currentGroup);
       }
 
-      // Populate table rows with merged cells for 평가항목
-      const groupedData = groupRowsByColumn(evaluationData, "항목");
+      return grouped;
+    }
 
-      groupedData.forEach((group) => {
-        const { key, rows } = group;
+    // Populate table rows with merged cells for 평가항목
+    const groupedData = groupRowsByColumn(evaluationData, "항목");
 
-        rows.forEach((data, index) => {
-          const row = document.createElement("tr");
+    groupedData.forEach((group) => {
+      const { key, rows } = group;
 
-          // Merge the first cell for 평가항목
-          if (index === 0) {
-            row.innerHTML = `
+      rows.forEach((data, index) => {
+        const row = document.createElement("tr");
+
+        // Merge the first cell for 평가항목
+        if (index === 0) {
+          row.innerHTML = `
               <td rowspan="${rows.length}">${key}</td>
               <td class="action-cell">${data.행동지표}</td>
               <td>${data.배점}</td>
@@ -590,8 +612,8 @@
               <td class="clickable" data-value="${data.하}" data-row="${index}"></td>
               <td>${data.참고사항}</td>
             `;
-          } else {
-            row.innerHTML = `
+        } else {
+          row.innerHTML = `
               <td class="action-cell">${data.행동지표}</td>
               <td>${data.배점}</td>
               <td class="clickable" data-value="${data.상}" data-row="${index}"></td>
@@ -599,146 +621,146 @@
               <td class="clickable" data-value="${data.하}" data-row="${index}"></td>
               <td>${data.참고사항}</td>
             `;
-          }
-
-          tbody.appendChild(row);
-        });
-      });
-
-      // Add click event listener to tbody
-      tbody.addEventListener("click", (event) => {
-        const cell = event.target;
-
-        if (cell.classList.contains("clickable")) {
-          const row = cell.parentElement; // 현재 셀이 속한 행
-          const actionCell = row.querySelector(".action-cell"); // 행동지표 셀
-          const rowCells = Array.from(row.children).filter((c) =>
-            c.classList.contains("clickable")
-          );
-
-          // Deselect other cells in the same row
-          rowCells.forEach((c) => {
-            if (c !== cell && c.classList.contains("selected")) {
-              totalScore -= parseInt(c.getAttribute("data-value"), 10);
-              c.classList.remove("selected");
-              c.textContent = ""; // 값 초기화
-            }
-          });
-
-          // Toggle selection
-          if (cell.classList.contains("selected")) {
-            totalScore -= parseInt(cell.getAttribute("data-value"), 10);
-            cell.classList.remove("selected");
-            cell.textContent = ""; // 값 초기화
-            actionCell.classList.remove("action-highlight"); // 행동지표 강조 제거
-          } else {
-            totalScore += parseInt(cell.getAttribute("data-value"), 10);
-            cell.classList.add("selected");
-            cell.textContent = cell.getAttribute("data-value"); // 선택된 값 표시
-            actionCell.classList.add("action-highlight"); // 행동지표 강조
-          }
-
-          // Update total score in both places
-          totalSpan.textContent = totalScore;
-          headerTotalSpan.textContent = totalScore; // 헤더 총점도 업데이트
-
-          // 데이터 저장
-          saveData();
         }
-      });
 
-      // Reset functionality
-      const resetButton = document.getElementById("resetButton");
-      resetButton.addEventListener("click", () => {
-        // Reset all selected cells
-        document.querySelectorAll(".selected").forEach((cell) => {
+        tbody.appendChild(row);
+      });
+    });
+
+    // Add click event listener to tbody
+    tbody.addEventListener("click", (event) => {
+      const cell = event.target;
+
+      if (cell.classList.contains("clickable")) {
+        const row = cell.parentElement; // 현재 셀이 속한 행
+        const actionCell = row.querySelector(".action-cell"); // 행동지표 셀
+        const rowCells = Array.from(row.children).filter((c) =>
+          c.classList.contains("clickable")
+        );
+
+        // Deselect other cells in the same row
+        rowCells.forEach((c) => {
+          if (c !== cell && c.classList.contains("selected")) {
+            totalScore -= parseInt(c.getAttribute("data-value"), 10);
+            c.classList.remove("selected");
+            c.textContent = ""; // 값 초기화
+          }
+        });
+
+        // Toggle selection
+        if (cell.classList.contains("selected")) {
+          totalScore -= parseInt(cell.getAttribute("data-value"), 10);
           cell.classList.remove("selected");
-          cell.textContent = ""; // 셀의 값을 공란으로 초기화
-        });
-
-        // Reset all highlighted 행동지표 cells
-        document.querySelectorAll(".action-highlight").forEach((cell) => {
-          cell.classList.remove("action-highlight");
-        });
-
-        // Reset total score in both places
-        totalScore = 0;
-        totalSpan.textContent = totalScore;
-        headerTotalSpan.textContent = totalScore; // 헤더 총점도 초기화
-
-        // localStorage 데이터 삭제
-        localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem(TOTAL_SCORE_KEY);
-      });
-
-      // 참고사항 버튼 클릭 이벤트 수정
-      document.getElementById("refButton").addEventListener("click", () => {
-        const icon = document.querySelector("#refButton i");
-        const button = document.getElementById("refButton");
-
-        // 아이콘과 툴팁 토글
-        if (icon.classList.contains("fa-eye")) {
-          icon.classList.replace("fa-eye", "fa-eye-slash");
-          button.title = "참고사항 보기";
+          cell.textContent = ""; // 값 초기화
+          actionCell.classList.remove("action-highlight"); // 행동지표 강조 제거
         } else {
-          icon.classList.replace("fa-eye-slash", "fa-eye");
-          button.title = "참고사항 숨기기";
+          totalScore += parseInt(cell.getAttribute("data-value"), 10);
+          cell.classList.add("selected");
+          cell.textContent = cell.getAttribute("data-value"); // 선택된 값 표시
+          actionCell.classList.add("action-highlight"); // 행동지표 강조
         }
 
-        // 참고사항 열 토글
-        document
-          .querySelectorAll("thead th:last-child, tbody td:last-child")
-          .forEach((cell) => {
-            cell.classList.toggle("hide");
-          });
+        // Update total score in both places
+        totalSpan.textContent = totalScore;
+        headerTotalSpan.textContent = totalScore; // 헤더 총점도 업데이트
+
+        // 데이터 저장
+        saveData();
+      }
+    });
+
+    // Reset functionality
+    const resetButton = document.getElementById("resetButton");
+    resetButton.addEventListener("click", () => {
+      // Reset all selected cells
+      document.querySelectorAll(".selected").forEach((cell) => {
+        cell.classList.remove("selected");
+        cell.textContent = ""; // 셀의 값을 공란으로 초기화
       });
 
-      document.querySelectorAll("tbody tr").forEach((row) => {
-        // 각 행의 모든 열을 확인
-        const cells = row.querySelectorAll("td");
-        cells.forEach((cell, index) => {
-          // 배점 열의 값을 확인
-          if (parseInt(cell.textContent, 10) === 10) {
-            cell.classList.add("orange-bg"); // 배점 셀에 주황색 클래스 추가
+      // Reset all highlighted 행동지표 cells
+      document.querySelectorAll(".action-highlight").forEach((cell) => {
+        cell.classList.remove("action-highlight");
+      });
 
-            // 왼쪽 셀 처리
-            const previousCell = cell.previousElementSibling;
-            if (previousCell) {
-              previousCell.classList.add("orange-bg"); // 왼쪽 셀에 주황색 클래스 추가
-            }
+      // Reset total score in both places
+      totalScore = 0;
+      totalSpan.textContent = totalScore;
+      headerTotalSpan.textContent = totalScore; // 헤더 총점도 초기화
 
-            // 오른쪽 셀 처리
-            // const nextCell = cell.nextElementSibling;
-            // if (nextCell) {
-            //   nextCell.classList.add("orange-bg"); // 오른쪽 셀에 주황색 클래스 추가
-            // }
-          }
+      // localStorage 데이터 삭제
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(TOTAL_SCORE_KEY);
+    });
+
+    // 참고사항 버튼 클릭 이벤트 수정
+    document.getElementById("refButton").addEventListener("click", () => {
+      const icon = document.querySelector("#refButton i");
+      const button = document.getElementById("refButton");
+
+      // 아이콘과 툴팁 토글
+      if (icon.classList.contains("fa-eye")) {
+        icon.classList.replace("fa-eye", "fa-eye-slash");
+        button.title = "참고사항 보기";
+      } else {
+        icon.classList.replace("fa-eye-slash", "fa-eye");
+        button.title = "참고사항 숨기기";
+      }
+
+      // 참고사항 열 토글
+      document
+        .querySelectorAll("thead th:last-child, tbody td:last-child")
+        .forEach((cell) => {
+          cell.classList.toggle("hide");
         });
-      });
+    });
 
-      // 햄버거 메뉴 기능 수정
-      const hamburger = document.querySelector(".hamburger-menu");
-      const sidebar = document.querySelector(".sidebar");
+    document.querySelectorAll("tbody tr").forEach((row) => {
+      // 각 행의 모든 열을 확인
+      const cells = row.querySelectorAll("td");
+      cells.forEach((cell, index) => {
+        // 배점 열의 값을 확인
+        if (parseInt(cell.textContent, 10) === 10) {
+          cell.classList.add("orange-bg"); // 배점 셀에 주황색 클래스 추가
 
-      hamburger.addEventListener("click", () => {
-        hamburger.classList.toggle("active");
-        sidebar.classList.toggle("active");
-      });
+          // 왼쪽 셀 처리
+          const previousCell = cell.previousElementSibling;
+          if (previousCell) {
+            previousCell.classList.add("orange-bg"); // 왼쪽 셀에 주황색 클래스 추가
+          }
 
-      // 사이드바 외부 클릭 시 닫기
-      document.addEventListener("click", (e) => {
-        if (!hamburger.contains(e.target) && !sidebar.contains(e.target)) {
-          hamburger.classList.remove("active");
-          sidebar.classList.remove("active");
+          // 오른쪽 셀 처리
+          // const nextCell = cell.nextElementSibling;
+          // if (nextCell) {
+          //   nextCell.classList.add("orange-bg"); // 오른쪽 셀에 주황색 클래스 추가
+          // }
         }
       });
+    });
 
-      // 페이지 로드 시 저장된 데이터 불러오기
-      document.addEventListener("DOMContentLoaded", loadSavedData);
-    </script>
+    // 햄버거 메뉴 기능 수정
+    const hamburger = document.querySelector(".hamburger-menu");
+    const sidebar = document.querySelector(".sidebar");
 
-    <footer>
-      <!-- <div class="footer-content">
+    hamburger.addEventListener("click", () => {
+      hamburger.classList.toggle("active");
+      sidebar.classList.toggle("active");
+    });
+
+    // 사이드바 외부 클릭 시 닫기
+    document.addEventListener("click", (e) => {
+      if (!hamburger.contains(e.target) && !sidebar.contains(e.target)) {
+        hamburger.classList.remove("active");
+        sidebar.classList.remove("active");
+      }
+    });
+
+    // 페이지 로드 시 저장된 데이터 불러오기
+    document.addEventListener("DOMContentLoaded", loadSavedData);
+  </script>
+
+  <footer>
+    <!-- <div class="footer-content">
         <div class="footer-info">
           <p>강원소방학교</p>
           <p>주소: 서울특별시 XX구 XX로 123</p>
@@ -746,9 +768,10 @@
           <p>이메일: training@fire.center.kr</p>
         </div>
       </div> -->
-      <div class="footer-bottom">
-        <p>&copy; 2025 강원소방학교 지휘역량강화센터 . All rights reserved.</p>
-      </div>
-    </footer>
-  </body>
+    <div class="footer-bottom">
+      <p>&copy; 2025 강원소방학교 지휘역량강화센터 . All rights reserved.</p>
+    </div>
+  </footer>
+</body>
+
 </html>
