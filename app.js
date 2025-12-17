@@ -961,13 +961,13 @@ async function updateSession(roomNumber, timeValue, examNumber, mode) {
 
 // 클라이언트 화면에 서버 세션 데이터 반영 (진행중이면 자동 실행)
 function applySessionDataToClient(data) {
-  console.log('Applying session data to client. Raw data:', data); // Log raw data as object
+  console.log('Applying session data to client. Raw data:', data);
 
   const baseTimeValue = (typeof data.time_value === 'number' && !isNaN(data.time_value)) ? data.time_value : 0;
   let calculatedTime = baseTimeValue;
 
   if (data.ingox === 'running' && data.started_at) {
-    const startedAtTimestamp = new Date(data.started_at.replace(' ', 'T') + '+09:00'); // KST offset
+    const startedAtTimestamp = new Date(data.started_at.replace(' ', 'T') + '+09:00');
     if (!isNaN(startedAtTimestamp.getTime())) {
       const now = new Date();
       const elapsedMillis = now.getTime() - startedAtTimestamp.getTime();
@@ -976,13 +976,9 @@ function applySessionDataToClient(data) {
       } else { // stopwatch mode
         calculatedTime = baseTimeValue + elapsedMillis;
       }
-    } else {
-      console.warn('Invalid data.started_at received:', data.started_at, '- using baseTimeValue for calculations. CalculatedTime will be baseTimeValue.');
-      // calculatedTime remains baseTimeValue
     }
   }
 
-  // Ensure calculatedTime is not negative, default to 0 if it became NaN somehow (shouldn't with above)
   calculatedTime = (typeof calculatedTime === 'number' && !isNaN(calculatedTime)) ? Math.max(0, calculatedTime) : 0;
 
   console.log(`Applying data: mode=${data.mode}, ingox=${data.ingox}, baseTimeValue=${baseTimeValue}, final calculatedTime=${calculatedTime}`);
@@ -997,47 +993,33 @@ function applySessionDataToClient(data) {
   }
 
   if (data.mode === 'timer') {
-    const actualRemainingTimeMs = calculatedTime; // MS 단위
-
-    updateDisplay(actualRemainingTimeMs); // 현재 남은 시간을 화면에 표시
-    isStopwatchMode = false; // 타이머 모드임을 명확히 함
-
-    // 클라이언트의 타이머 실행 기준을 서버의 현재 상태에 맞게 재설정
-    // timerDuration (전역 변수, 분 단위)을 현재 남은 시간으로 설정
+    const actualRemainingTimeMs = calculatedTime;
+    updateDisplay(actualRemainingTimeMs);
+    isStopwatchMode = false;
     timerDuration = actualRemainingTimeMs / (60 * 1000);
-    // elapsedTime (전역 변수, ms 단위)을 0으로 설정
     elapsedTime = 0;
 
     if (data.ingox === 'running' && actualRemainingTimeMs > 0) {
-      // 서버 상태가 running이면 항상 타이머 시작 - 이전 상태 관계없이
       console.log('타이머 실행 중 - 서버 상태 동기화: running');
       startTimer();
-    } else {
-      // 서버에서 타이머가 일시 중지되었거나 종료됨
-      console.log('타이머 중지됨 - 서버 상태 동기화: 일시정지 또는 종료');
-      isRunning = false;
-      if (actualRemainingTimeMs <= 0) {
-        updateDisplay(0); // 시간이 다 되었으면 화면에 0 표시
-      }
     }
   } else { // stopwatch mode
-    const swValue = calculatedTime;
-    timerDuration = 0;
-    elapsedTime = swValue; // For stopwatch, elapsedTime is the current count
-    updateDisplay(swValue);
     isStopwatchMode = true;
+    elapsedTime = calculatedTime;
+    updateDisplay(elapsedTime);
 
     if (data.ingox === 'running') {
       console.log('스톱워치 실행 중 - 서버 상태 동기화: running');
       startStopwatch();
-    } else {
-      console.log('스톱워치 중지됨 - 서버 상태 동기화: 일시정지');
-      isRunning = false;
     }
   }
 
-  examNumber = (typeof data.exam_number === 'number' && !isNaN(data.exam_number)) ? data.exam_number : 0;
-  updateExamNumber();
+  // 응시번호 동기화 추가
+  if (typeof data.exam_number === 'number' && !isNaN(data.exam_number)) {
+    examNumber = data.exam_number;
+    updateExamNumber();
+    console.log('응시번호 동기화:', examNumber);
+  }
 }
 
 // 모달 관련 기능
