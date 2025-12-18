@@ -30,6 +30,11 @@
         background-color: #f2f2f2;
       }
 
+      td.reference-cell {
+        text-align: left;
+        white-space: normal;
+      }
+
       td.clickable {
         cursor: pointer;
       }
@@ -265,7 +270,7 @@
   <body>
     <h1>
       고급 실기평가표
-      <span>(총점: <span id="headerTotal">0</span>점)</span>
+      <span>(총점: <span id="headerTotal">0/0점</span>, <span id="headerChecked">0/0</span>)</span>
     </h1>
     <button id="resetButton" title="초기화">
       <i class="fas fa-redo"></i>
@@ -312,7 +317,7 @@
       <tfoot>
         <tr>
           <td colspan="7">
-            총합: <span id="total" class="highlight">0</span> 점
+            총합: <span id="total" class="highlight">0/0점</span>, 체크항목수: <span id="checkedCount">0/0</span>
           </td>
         </tr>
       </tfoot>
@@ -328,7 +333,7 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "출동 중 정보수집 및 선착대장 지원 활동",
+          참고사항: "상황실, 선착대장과 무전을 통해 정보파악 및 상황판작성<br>상황을 추정하고 대응활동 구상 및 선착대장에게 전파",
         },
         {
           항목: "상황평가 <br>및 의사결정",
@@ -337,7 +342,7 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "지휘권 선언의 적절성",
+          참고사항: "상황평가(육안) → 브리핑 → 지휘권 선언 → 상세상황평가<br>급박한 경우 도착 즉시 지휘선언 가능.",
         },
         {
           항목: "상황평가 <br>및 의사결정",
@@ -346,7 +351,7 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "최초 상황평가의 정확성 및 포괄성",
+          참고사항: "ABCD, 둘러보는 상황평가(구조대상자+화재+연소확대 예측)<br>중요정보 및 활동파악(내부+외부), 추가소방력 요청<br>고정지휘(적정위치), 전략선택(공격전략), 핵심목표까지",
         },
         {
           항목: "상황평가 <br>및 의사결정",
@@ -355,7 +360,7 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "핵심목표 및 대응지침 제시의 적절성",
+          참고사항: "상황평가와 위험성판단을 근거로 핵심목표 제시<br>(2층 노래방의 인명구조에 집중할 것), 상황변화시 변경가능",
         },
         {
           항목: "상황평가 <br>및 의사결정",
@@ -364,7 +369,7 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "1차 출동대 임무지시 및 조정의 적절성",
+          참고사항: "임무대기 무전시 바로 중요사항에 우선적으로 배치<br>(전술우선순위 기반 구체적 임무지시) 상황변화시 임무조정",
         },
         {
           항목: "상황평가 <br>및 의사결정",
@@ -373,7 +378,7 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "유관기관 등 추가자원 동원의 적절성",
+          참고사항: "최초 상황평가때 요청(특수차량 + 유관기관)<br>교대소방력을 고려한 충분한 자원 요청(필요시 대응단계)",
         },
         {
           항목: "대응활동 <br>및 진행상황관리	",
@@ -382,7 +387,7 @@
           상: 3,
           중: 2,
           하: 1,
-          참고사항: "차량배치 및 조정의 적절성",
+          참고사항: "대기1단계(회차가능 적절부서), 대기2단계(자원대기소) 운영<br>특수차 공간확보, 1선펌프차, 중요물탱크 지정하는지",
         },
         {
           항목: "대응활동 <br>및 진행상황관리	",
@@ -391,7 +396,7 @@
           상: 3,
           중: 2,
           하: 1,
-          참고사항: "소방활동구역 설정 및 통제의 적절성",
+          참고사항: "통제선 설치, 1통제선(소방), 2통제선(경찰)",
         },
         {
           항목: "대응활동 <br>및 진행상황관리	",
@@ -400,7 +405,7 @@
           상: 3,
           중: 2,
           하: 1,
-          참고사항: "소방용수공급체계 구축의 적절성",
+          참고사항: "소화전, 1선펌프, 중요물탱크 - 급수체계 확보지시<br>인근에 소화전이 없는 경우 물탱크차 순환보수 전술",
         },
         {
           항목: "대응활동 <br>및 진행상황관리	",
@@ -409,7 +414,7 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "소방력 배치 및 조정의 적절성",
+          참고사항: "3단계 소방력 배치 모델 적용여부(위험구역 우선배치)<br>상황변화에 따라 배치 조정",
         },
         {
           항목: "대응활동 <br>및 진행상황관리	",
@@ -418,7 +423,7 @@
           상: 3,
           중: 2,
           하: 1,
-          참고사항: "현장분할 및 단위지휘관 운영의 적절성",
+          참고사항: "지리적(2층), 기능적(임무) 분할 단위지휘관 운영<br>(단위지휘관과 무선교신 우선 원칙)",
         },
         {
           항목: "대응활동 <br>및 진행상황관리	",
@@ -427,7 +432,7 @@
           상: 10,
           중: 7,
           하: 4,
-          참고사항: "진행상황 파악 및 개선조치의 적절성",
+          참고사항: "구역별로 핵심목표 달성여부, 대응 적절성 평가<br>악화 시 조정 및 대안마련 (추가인력, 폼.포사용 등)",
         },
         {
           항목: "대응활동 <br>및 진행상황관리	",
@@ -436,7 +441,7 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "전술우선순위 관리의 적절성",
+          참고사항: "생명보호 > 외부연소확대 방지 > 내부연소확대 방지 > 화점진화 > 2차 인명검색 잔화정리 등",
         },
         {
           항목: "대응활동 <br>및 진행상황관리	",
@@ -445,7 +450,7 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "완진절차 준수의 적절성",
+          참고사항: "단위대 상황보고> 현장지휘관 현장확인> 상황판단회의> 완진 건의<br>(통제단장의 완진 선언)",
         },
         {
           항목: "대응활동 <br>및 진행상황관리	",
@@ -454,7 +459,7 @@
           상: 3,
           중: 2,
           하: 1,
-          참고사항: "전술상황판 기록의 정확성 및 완전성",
+          참고사항: "자원배치 관리, 화점, 구조대상자, 중요 위험요인<br>전술우선순위 달성 초진 및 완진",
         },
         {
           항목: "위기관리, 소통 및 리더쉽",
@@ -463,7 +468,7 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "무전통제의 적절성",
+          참고사항: "무전폭주시 무선침묵 지시로 통제 (무전 유지.통제)",
         },
         {
           항목: "위기관리, 소통 및 리더쉽",
@@ -472,7 +477,7 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "효율적인 의사교환의 적절성",
+          참고사항: "지시보다는 듣기에 비중을 두고 무전운용<br>명확하고 정확한 의사전달이 되는지",
         },
         {
           항목: "위기관리, 소통 및 리더쉽",
@@ -481,7 +486,7 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "돌발 및 위기상황 대응의 적절성",
+          참고사항: "돌발이나 위기에 적합한 지시를 하는지<br>소방차량고장, 통신장애, 주민항의, 폭발, 대원고립 등",
         },
         {
           항목: "위기관리, 소통 및 리더쉽",
@@ -490,7 +495,7 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "작전운영의 적절성",
+          참고사항: "전술우선순위, 단위지휘관 운영, 자원배치 및 관리 등",
         },
         {
           항목: "위기관리, 소통 및 리더쉽",
@@ -499,7 +504,7 @@
           상: 10,
           중: 7,
           하: 4,
-          참고사항: "인명구조 목표달성 및 대원안전관리의 적절성",
+          참고사항: "인명구조 최우선 여부, 활동 적절성<br>인명검색 절차 [우선탐색(발화점-발화층-직상층) + 교차탐색+정밀탐색]<br>구조대상자 발견시 이송 및 추가 인명검색의 연속성 유지",
         },
         {
           항목: "대응활동계획 및 상황판단회의",
@@ -508,7 +513,7 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "정확한 상황인식의 적절성",
+          참고사항: "재난상황(화재+확대+인명+위험요소)에 대한 인식",
         },
         {
           항목: "대응활동계획 및 상황판단회의",
@@ -517,7 +522,7 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "목표 및 우선순위 선정의 적절성",
+          참고사항: "목표 및 해결할 문제에 대한 우선순위(RECEO) 적절성",
         },
         {
           항목: "대응활동계획 및 상황판단회의",
@@ -526,7 +531,7 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "최종계획의 구체성 및 우수성",
+          참고사항: "문제해결을 위한 대응계획의 구체성+현실성+적합성",
         },
         {
           항목: "대응활동계획 및 상황판단회의",
@@ -535,7 +540,7 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "예비방안(대안) 제시의 적절성",
+          참고사항: "문제해결이 안될 경우를 가정한 대안을 제시하는지",
         },
         {
           항목: "대응활동계획 및 상황판단회의",
@@ -544,7 +549,7 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "시민생활 영향성 검토 및 반영의 적절성",
+          참고사항: "자력대피자 유도 및 환자파악 조치, 미대피인원 파악<br>일반시민의 피해·영향 우려 시 조치(주변 건물 대피조치 등)",
         },
         {
           항목: "대응활동계획 및 상황판단회의",
@@ -553,7 +558,7 @@
           상: 10,
           중: 7,
           하: 4,
-          참고사항: "상황판단회의 진행의 적절성",
+          참고사항: "현재의 문제점, 목표, 해결방안제시의 적절성<br>통제단 각 부의 임무를 숙지하고, 적절하고 구체적으로 요청",
         },
         {
           항목: "대응활동계획 및 상황판단회의",
@@ -562,7 +567,7 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "출동대 및 유관기관 간 업무조정의 적절성",
+          참고사항: "유관기관에 적절한 임무요청, 유관기관의 업무조정 능력",
         },
         {
           항목: "대응활동계획 및 상황판단회의",
@@ -571,7 +576,7 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "명확한 회의 결과 도출 및 지시의 적절성",
+          참고사항: "회의 결과 도출 및 회의 결과를 반영한 적절한 지휘 여부",
         },
         {
           항목: "대응활동계획 및 상황판단회의",
@@ -580,7 +585,7 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "대응활동계획 조정의 적절성",
+          참고사항: "돌발상황. 상황변화에 따른 대응활동계획 조정 능력<br>(폭발, 대원부상, 내부진입 거부, 각 부에서 어려움 호소 등)",
         },
         {
           항목: "언론브리핑",
@@ -589,7 +594,7 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "브리핑 준비의 완전성",
+          참고사항: "상황판 작성 적절성, 주변통제, 자료의 정확성 등",
         },
         {
           항목: "언론브리핑",
@@ -598,7 +603,7 @@
           상: 10,
           중: 7,
           하: 4,
-          참고사항: "브리핑 내용의 적절성",
+          참고사항: "소개 > 유감표명 > 개요(사고일시 및 장소, 유형) > 초기상황 > 활동사항(화재+인명) > 자원(소방+유관기관) > 다음 브리핑예정<br>★정보의 사실성, 사고원인 확정(X), 개인정보제공(X), 개인의견(X), 다른기관의 권한 및 책임언급(X), 인피는 변동가능성이 있음을 공지",
         },
         {
           항목: "언론브리핑",
@@ -607,7 +612,7 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "브리핑 태도의 적절성",
+          참고사항: "브리핑 시 태도(자세, 공손함, 자신감) 및 용어 사용의 적절성",
         },
         {
           항목: "언론브리핑",
@@ -616,7 +621,7 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "전달력의 적절성",
+          참고사항: "브리핑 내용의 이해가 쉬운지 (일반인의 입장에서)",
         },
         {
           항목: "언론브리핑",
@@ -625,7 +630,7 @@
           상: 10,
           중: 7,
           하: 4,
-          참고사항: "질의 응답의 적절성",
+          참고사항: "기자 질의에 대한 적절한 응답, 자신감+사실 기반<br>★정보의 사실성, 사고원인 확정(X), 개인정보제공(X), 개인의견(X)<br>다른기관의 권한 및 책임언급(X), 자세한 인피사항은 보건소장",
         },
         {
           항목: "언론브리핑",
@@ -634,7 +639,7 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "질문의 이해도",
+          참고사항: "기자 질의 내용에 대한 이해 (난해한 질문 시 재확인 하는지)",
         },
         {
           항목: "언론브리핑",
@@ -643,7 +648,7 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "답변태도의 적절성",
+          참고사항: "답변 시 태도(자세+공손함+자신감) 및 용어 사용의 적절성",
         },
         {
           항목: "언론브리핑",
@@ -652,14 +657,21 @@
           상: 5,
           중: 3,
           하: 1,
-          참고사항: "언론취재의 방향성 제시의 적절성",
+          참고사항: "사실+배경+수행임무+구체적 수치 제공+중립성+비난금지★",
         },
       ];
 
       const tbody = document.querySelector("tbody");
       const totalSpan = document.getElementById("total");
       const headerTotalSpan = document.getElementById("headerTotal");
+      const checkedCountSpan = document.getElementById("checkedCount");
+      const headerCheckedSpan = document.getElementById("headerChecked");
       let totalScore = 0;
+      let checkedCount = 0;
+      
+      // 전체 항목 수 및 만점 계산
+      const totalItems = evaluationData.length;
+      const maxScore = evaluationData.reduce((sum, item) => sum + item.배점, 0);
 
       // localStorage 키 상수
       const STORAGE_KEY = "evaluation_data_advanced";
@@ -689,8 +701,20 @@
 
         if (savedTotalScore) {
           totalScore = parseInt(savedTotalScore);
-          totalSpan.textContent = totalScore;
-          headerTotalSpan.textContent = totalScore;
+          // 체크된 항목 수 계산 (선택된 행의 수)
+          checkedCount = Array.from(tbody.children).filter(row => 
+            row.querySelector(".selected") !== null
+          ).length;
+          totalSpan.textContent = `${totalScore}/${maxScore}점`;
+          headerTotalSpan.textContent = `${totalScore}/${maxScore}점`;
+          checkedCountSpan.textContent = `${checkedCount}/${totalItems}`;
+          headerCheckedSpan.textContent = `${checkedCount}/${totalItems}`;
+        } else {
+          // 초기 표시
+          totalSpan.textContent = `0/${maxScore}점`;
+          headerTotalSpan.textContent = `0/${maxScore}점`;
+          checkedCountSpan.textContent = `0/${totalItems}`;
+          headerCheckedSpan.textContent = `0/${totalItems}`;
         }
       }
 
@@ -749,7 +773,7 @@
                         <td class="clickable" data-value="${data.상}" data-row="${index}"></td>
                         <td class="clickable" data-value="${data.중}" data-row="${index}"></td>
                         <td class="clickable" data-value="${data.하}" data-row="${index}"></td>
-                        <td>${data.참고사항}</td>
+                        <td class="reference-cell">${data.참고사항}</td>
                     `;
           } else {
             row.innerHTML = `
@@ -758,7 +782,7 @@
                         <td class="clickable" data-value="${data.상}" data-row="${index}"></td>
                         <td class="clickable" data-value="${data.중}" data-row="${index}"></td>
                         <td class="clickable" data-value="${data.하}" data-row="${index}"></td>
-                        <td>${data.참고사항}</td>
+                        <td class="reference-cell">${data.참고사항}</td>
                     `;
           }
 
@@ -799,12 +823,19 @@
             actionCell.classList.add("action-highlight"); // 행동지표 강조
           }
 
-          // Update total score in both places
-          totalSpan.textContent = totalScore;
-          headerTotalSpan.textContent = totalScore; // 헤더 총점도 업데이트
+      // 체크된 항목 수 계산 (선택된 행의 수)
+      checkedCount = Array.from(tbody.children).filter(row => 
+        row.querySelector(".selected") !== null
+      ).length;
+      
+      // Update total score in both places
+      totalSpan.textContent = `${totalScore}/${maxScore}점`;
+      headerTotalSpan.textContent = `${totalScore}/${maxScore}점`;
+      checkedCountSpan.textContent = `${checkedCount}/${totalItems}`;
+      headerCheckedSpan.textContent = `${checkedCount}/${totalItems}`;
 
-          // 데이터 저장
-          saveData();
+      // 데이터 저장
+      saveData();
         }
       });
 
@@ -824,8 +855,11 @@
 
         // Reset total score in both places
         totalScore = 0;
-        totalSpan.textContent = totalScore;
-        headerTotalSpan.textContent = totalScore; // 헤더 총점도 초기화
+        checkedCount = 0;
+        totalSpan.textContent = `0/${maxScore}점`;
+        headerTotalSpan.textContent = `0/${maxScore}점`;
+        checkedCountSpan.textContent = `0/${totalItems}`;
+        headerCheckedSpan.textContent = `0/${totalItems}`;
 
         // localStorage 데이터 삭제
         localStorage.removeItem(STORAGE_KEY);

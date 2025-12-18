@@ -31,6 +31,11 @@
       background-color: #f2f2f2;
     }
 
+    td.reference-cell {
+      text-align: left;
+      white-space: normal;
+    }
+
     td.clickable {
       cursor: pointer;
     }
@@ -262,7 +267,7 @@
 
   <h1>
     중급 실기평가표
-    <span>(총점: <span id="headerTotal">0</span>점)</span>
+    <span>(총점: <span id="headerTotal">0/0점</span>, <span id="headerChecked">0/0</span>)</span>
   </h1>
   <button id="resetButton" title="초기화">
     <i class="fas fa-redo"></i>
@@ -288,7 +293,7 @@
     <tfoot>
       <tr>
         <td colspan="7">
-          총합: <span id="total" class="highlight">0</span> 점
+          총합: <span id="total" class="highlight">0/0점</span>, 체크항목수: <span id="checkedCount">0/0</span>
         </td>
       </tr>
     </tfoot>
@@ -815,7 +820,14 @@
     const tbody = document.querySelector("tbody");
     const totalSpan = document.getElementById("total");
     const headerTotalSpan = document.getElementById("headerTotal");
+    const checkedCountSpan = document.getElementById("checkedCount");
+    const headerCheckedSpan = document.getElementById("headerChecked");
     let totalScore = 0;
+    let checkedCount = 0;
+    
+    // 전체 항목 수 및 만점 계산
+    const totalItems = evaluationData.length;
+    const maxScore = evaluationData.reduce((sum, item) => sum + item.배점, 0);
 
     // localStorage 키 상수
     const STORAGE_KEY = "evaluation_data_intermediate";
@@ -841,8 +853,20 @@
 
       if (savedTotalScore) {
         totalScore = parseInt(savedTotalScore);
-        totalSpan.textContent = totalScore;
-        headerTotalSpan.textContent = totalScore;
+        // 체크된 항목 수 계산 (선택된 행의 수)
+        checkedCount = Array.from(tbody.children).filter(row => 
+          row.querySelector(".selected") !== null
+        ).length;
+        totalSpan.textContent = `${totalScore}/${maxScore}점`;
+        headerTotalSpan.textContent = `${totalScore}/${maxScore}점`;
+        checkedCountSpan.textContent = `${checkedCount}/${totalItems}`;
+        headerCheckedSpan.textContent = `${checkedCount}/${totalItems}`;
+      } else {
+        // 초기 표시
+        totalSpan.textContent = `0/${maxScore}점`;
+        headerTotalSpan.textContent = `0/${maxScore}점`;
+        checkedCountSpan.textContent = `0/${totalItems}`;
+        headerCheckedSpan.textContent = `0/${totalItems}`;
       }
     }
 
@@ -901,7 +925,7 @@
               <td class="clickable" data-value="${data.상}" data-row="${index}"></td>
               <td class="clickable" data-value="${data.중}" data-row="${index}"></td>
               <td class="clickable" data-value="${data.하}" data-row="${index}"></td>
-              <td>${data.참고사항}</td>
+              <td class="reference-cell">${data.참고사항}</td>
             `;
         } else {
           row.innerHTML = `
@@ -910,7 +934,7 @@
               <td class="clickable" data-value="${data.상}" data-row="${index}"></td>
               <td class="clickable" data-value="${data.중}" data-row="${index}"></td>
               <td class="clickable" data-value="${data.하}" data-row="${index}"></td>
-              <td>${data.참고사항}</td>
+              <td class="reference-cell">${data.참고사항}</td>
             `;
         }
 
@@ -951,9 +975,16 @@
           actionCell.classList.add("action-highlight"); // 행동지표 강조
         }
 
+        // 체크된 항목 수 계산 (선택된 행의 수)
+        checkedCount = Array.from(tbody.children).filter(row => 
+          row.querySelector(".selected") !== null
+        ).length;
+        
         // Update total score in both places
-        totalSpan.textContent = totalScore;
-        headerTotalSpan.textContent = totalScore;
+        totalSpan.textContent = `${totalScore}/${maxScore}점`;
+        headerTotalSpan.textContent = `${totalScore}/${maxScore}점`;
+        checkedCountSpan.textContent = `${checkedCount}/${totalItems}`;
+        headerCheckedSpan.textContent = `${checkedCount}/${totalItems}`;
 
         // 데이터 저장
         saveData();
@@ -976,8 +1007,11 @@
 
       // Reset total score in both places
       totalScore = 0;
-      totalSpan.textContent = totalScore;
-      headerTotalSpan.textContent = totalScore;
+      checkedCount = 0;
+      totalSpan.textContent = `0/${maxScore}점`;
+      headerTotalSpan.textContent = `0/${maxScore}점`;
+      checkedCountSpan.textContent = `0/${totalItems}`;
+      headerCheckedSpan.textContent = `0/${totalItems}`;
 
       // localStorage 데이터 삭제
       localStorage.removeItem(STORAGE_KEY);
