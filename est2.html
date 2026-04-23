@@ -6,6 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>중급지휘관 실기평가표</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="manifest" href="manifest-est2.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <meta name="theme-color" content="#39c0ed" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -82,6 +86,24 @@
       background-color: #7af880;
       color: #282c34;
       z-index: 901;
+    }
+
+    #installButton {
+      position: fixed;
+      top: 10px;
+      right: 150px;
+      padding: 10px 20px;
+      font-size: 1rem;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      background-color: #ffd54f;
+      color: #282c34;
+      z-index: 901;
+    }
+
+    #installButton:hover {
+      background-color: #ffca28;
     }
 
     #resetButton:hover {
@@ -275,6 +297,13 @@
   </button>
   <button id="refButton" title="참고사항 숨기기">
     <i class="fas fa-eye"></i>
+  </button>
+  <button
+    type="button"
+    id="installButton"
+    title="이 평가표를 앱(홈화면)에 설치"
+  >
+    <i class="fas fa-download" aria-hidden="true"></i>
   </button>
   <table id="evaluationTable">
     <thead>
@@ -1084,6 +1113,7 @@
     // 페이지 로드 시 저장된 데이터 불러오기
     document.addEventListener("DOMContentLoaded", loadSavedData);
   </script>
+  <script src="pwa-install.js" defer></script>
 </body>
 
 </html>

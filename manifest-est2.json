@@ -1,0 +1,24 @@
+{
+  "id": "stpwtch-est2",
+  "name": "중급 지휘관 실기평가표",
+  "short_name": "중급평가",
+  "start_url": "est2.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#39c0ed",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
